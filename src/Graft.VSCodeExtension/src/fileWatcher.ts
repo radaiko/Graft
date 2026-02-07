@@ -7,50 +7,35 @@ export class FileWatcher {
 
   constructor(private readonly onChanged: () => void) {}
 
-  watch(graftDir: string, gitDir: string): void {
+  watch(graftDir: string, gitDir: string, gitCommonDir: string): void {
     this.dispose();
 
-    // Watch stacks/*.toml
-    const stacksPattern = new vscode.RelativePattern(
-      vscode.Uri.file(graftDir),
-      "stacks/*.toml"
-    );
-    const stacksWatcher = vscode.workspace.createFileSystemWatcher(stacksPattern);
-    stacksWatcher.onDidChange(() => this.trigger());
-    stacksWatcher.onDidCreate(() => this.trigger());
-    stacksWatcher.onDidDelete(() => this.trigger());
-    this.watchers.push(stacksWatcher);
+    const addWatcher = (base: string, pattern: string) => {
+      const w = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(vscode.Uri.file(base), pattern)
+      );
+      w.onDidChange(() => this.trigger());
+      w.onDidCreate(() => this.trigger());
+      w.onDidDelete(() => this.trigger());
+      this.watchers.push(w);
+    };
 
-    // Watch active-stack
-    const activeStackPattern = new vscode.RelativePattern(
-      vscode.Uri.file(graftDir),
-      "active-stack"
-    );
-    const activeWatcher = vscode.workspace.createFileSystemWatcher(activeStackPattern);
-    activeWatcher.onDidChange(() => this.trigger());
-    activeWatcher.onDidCreate(() => this.trigger());
-    activeWatcher.onDidDelete(() => this.trigger());
-    this.watchers.push(activeWatcher);
+    // Graft state files
+    addWatcher(graftDir, "stacks/*.toml");
+    addWatcher(graftDir, "active-stack");
+    addWatcher(graftDir, "operation.toml");
 
-    // Watch operation.toml (conflict state)
-    const opPattern = new vscode.RelativePattern(
-      vscode.Uri.file(graftDir),
-      "operation.toml"
-    );
-    const opWatcher = vscode.workspace.createFileSystemWatcher(opPattern);
-    opWatcher.onDidChange(() => this.trigger());
-    opWatcher.onDidCreate(() => this.trigger());
-    opWatcher.onDidDelete(() => this.trigger());
-    this.watchers.push(opWatcher);
+    // Per-worktree: HEAD (branch switches)
+    addWatcher(gitDir, "HEAD");
 
-    // Watch .git/HEAD (branch switches)
-    const headPattern = new vscode.RelativePattern(
-      vscode.Uri.file(gitDir),
-      "HEAD"
-    );
-    const headWatcher = vscode.workspace.createFileSystemWatcher(headPattern);
-    headWatcher.onDidChange(() => this.trigger());
-    this.watchers.push(headWatcher);
+    // Shared refs: local branch tips (commits, merges, rebases)
+    addWatcher(gitCommonDir, "refs/heads/**");
+
+    // Packed refs (git gc packs loose refs into this file)
+    addWatcher(gitCommonDir, "packed-refs");
+
+    // Index (staging area changes — detects git add/reset)
+    addWatcher(gitCommonDir, "index");
   }
 
   private trigger(): void {

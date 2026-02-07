@@ -5,6 +5,11 @@
   "version": "0.1.0",
   "publisher": "radaiko",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/radaiko/Graft.git",
+    "directory": "src/Graft.VSCodeExtension"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -55,7 +60,8 @@
       {
         "command": "graft.stackPush",
         "title": "Push Branch",
-        "category": "Graft"
+        "category": "Graft",
+        "icon": "$(add)"
       },
       {
         "command": "graft.stackPop",
@@ -127,12 +133,22 @@
         {
           "command": "graft.stackPush",
           "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
+          "group": "inline"
+        },
+        {
+          "command": "graft.stackPush",
+          "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
           "group": "1_stack@1"
         },
         {
           "command": "graft.stackPop",
           "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
           "group": "1_stack@2"
+        },
+        {
+          "command": "graft.stackSync",
+          "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
+          "group": "inline"
         },
         {
           "command": "graft.stackSync",
@@ -185,7 +201,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "1.85.0",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.27.3",
     "typescript": "^5.7.0"
   },
   "dependencies": {

@@ -52,8 +52,8 @@ export async function activate(
     treeDataProvider: treeProvider,
   });
 
-  // Start file watcher — pass per-worktree git dir for HEAD watching
-  fileWatcher.watch(graftDir, gitDir);
+  // Start file watcher — per-worktree dir for HEAD, common dir for refs
+  fileWatcher.watch(graftDir, gitDir, gitCommonDir);
 
   // Register commands
   registerCommands(context, cli, treeProvider, () => workspaceRoot);
