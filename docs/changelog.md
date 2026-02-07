@@ -10,8 +10,7 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ---
 
-<!-- UNRELEASED
-## vX.Y.Z
+## [Unreleased] -- Next
 
 ### Added
 
@@ -21,13 +20,13 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 - **Web UI:** Remove unused settings page
 
 ### Fixed
--->
 
 ## v0.2.0 -- Initial public release
 
 ### Added
+
 - **CLI:** Stack management -- `graft stack init`, `push`, `pop`, `drop`, `shift`, `commit`, `sync`, `log`, `del`
-- **CLI:** Active stack tracking -- set once with `graft stack init` or `graft stack sw`, all commands use it automatically
+- **CLI:** Active stack tracking -- set once with `graft stack init` or `graft stack switch`, all commands use it automatically
 - **CLI:** Worktree management -- `graft wt` to create, delete, list, and jump into worktrees
 - **CLI:** Nuke operations -- bulk cleanup of worktrees, stacks, and gone branches
 - **CLI:** Auto-update with background checking and staged binary replacement
