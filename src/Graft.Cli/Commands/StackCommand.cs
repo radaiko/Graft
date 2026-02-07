@@ -447,23 +447,41 @@ public static class StackCommand
     private static Command CreateDelCommand()
     {
         var nameArg = new Argument<string>("name") { Description = "Name of the stack to delete" };
+        var forceOption = new Option<bool>("--force") { Description = "Override dirty checks" };
+        forceOption.Aliases.Add("-f");
         var command = new Command("del", "Delete a stack. Branches are kept.");
         command.Add(nameArg);
+        command.Add(forceOption);
 
         command.SetAction((parseResult) =>
         {
             var name = parseResult.GetValue(nameArg)!;
+            var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
+
+            // Validate stack exists before prompting
+            var stackPath = Path.Combine(
+                Graft.Core.Git.GitRunner.ResolveGitCommonDir(repoPath),
+                "graft", "stacks", $"{name}.toml");
+            if (!File.Exists(stackPath))
+            {
+                Console.Error.WriteLine($"Error: Stack '{name}' not found.");
+                Environment.ExitCode = 1;
+                return;
+            }
+
+            Console.Write($"Delete stack '{name}'? Branches will be kept. [y/N] ");
+            var response = Console.ReadLine();
+            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Aborted.");
+                return;
+            }
 
             try
             {
                 StackManager.Delete(name, repoPath);
                 Console.WriteLine($"Deleted stack '{name}'. Branches are kept.");
-            }
-            catch (FileNotFoundException)
-            {
-                Console.Error.WriteLine($"Error: Stack '{name}' not found.");
-                Environment.ExitCode = 1;
             }
             catch (Exception ex)
             {

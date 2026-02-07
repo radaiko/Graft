@@ -7,7 +7,7 @@ public static class NukeCommand
 {
     public static Command Create()
     {
-        var forceOption = CreateForceOption("Skip dirty checks and confirmations");
+        var forceOption = CreateForceOption("Override dirty checks");
 
         var command = new Command("nuke", "Remove all graft resources (worktrees, stacks, gone branches)");
         command.Add(forceOption);
@@ -21,15 +21,12 @@ public static class NukeCommand
             var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
 
-            if (!force)
+            Console.Write("This will remove all worktrees, stacks, and gone branches. Continue? [y/N] ");
+            var response = Console.ReadLine();
+            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
             {
-                Console.Write("This will remove all worktrees, stacks, and gone branches. Continue? [y/N] ");
-                var response = Console.ReadLine();
-                if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
-                {
-                    Console.WriteLine("Aborted.");
-                    return;
-                }
+                Console.WriteLine("Aborted.");
+                return;
             }
 
             var result = await NukeManager.NukeAllAsync(repoPath, force, ct);
@@ -41,7 +38,7 @@ public static class NukeCommand
 
     private static Command CreateWtCommand()
     {
-        var forceOption = CreateForceOption("Force removal of dirty worktrees");
+        var forceOption = CreateForceOption("Override dirty checks");
         var command = new Command("wt", "Remove all worktrees");
         command.Add(forceOption);
 
@@ -50,15 +47,12 @@ public static class NukeCommand
             var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
 
-            if (!force)
+            Console.Write("This will remove all worktrees. Continue? [y/N] ");
+            var response = Console.ReadLine();
+            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
             {
-                Console.Write("This will remove all worktrees. Continue? [y/N] ");
-                var response = Console.ReadLine();
-                if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
-                {
-                    Console.WriteLine("Aborted.");
-                    return;
-                }
+                Console.WriteLine("Aborted.");
+                return;
             }
 
             var result = await NukeManager.NukeWorktreesAsync(repoPath, force, ct);
@@ -70,7 +64,7 @@ public static class NukeCommand
 
     private static Command CreateStackCommand()
     {
-        var forceOption = CreateForceOption("Force removal");
+        var forceOption = CreateForceOption("Override dirty checks");
         var command = new Command("stack", "Remove all stacks");
         command.Add(forceOption);
 
@@ -79,15 +73,12 @@ public static class NukeCommand
             var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
 
-            if (!force)
+            Console.Write("This will remove all stacks. Continue? [y/N] ");
+            var response = Console.ReadLine();
+            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
             {
-                Console.Write("This will remove all stacks. Continue? [y/N] ");
-                var response = Console.ReadLine();
-                if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
-                {
-                    Console.WriteLine("Aborted.");
-                    return;
-                }
+                Console.WriteLine("Aborted.");
+                return;
             }
 
             var result = await NukeManager.NukeStacksAsync(repoPath, force, ct);

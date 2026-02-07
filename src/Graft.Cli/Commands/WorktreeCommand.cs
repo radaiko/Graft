@@ -56,7 +56,7 @@ public static class WorktreeCommand
     private static Command CreateDelCommand()
     {
         var branchArg = new Argument<string>("branch") { Description = "Branch whose worktree to delete" };
-        var forceOption = new Option<bool>("--force") { Description = "Force removal (skip dirty checks)" };
+        var forceOption = new Option<bool>("--force") { Description = "Override dirty checks" };
         forceOption.Aliases.Add("-f");
 
         var command = new Command("del", "Delete a worktree");
@@ -68,6 +68,17 @@ public static class WorktreeCommand
             var branch = parseResult.GetValue(branchArg)!;
             var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
+
+            if (!force)
+            {
+                Console.Write($"Remove worktree for '{branch}'? [y/N] ");
+                var response = Console.ReadLine();
+                if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Aborted.");
+                    return;
+                }
+            }
 
             try
             {
