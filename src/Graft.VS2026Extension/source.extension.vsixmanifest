@@ -6,7 +6,7 @@
     <Identity Id="Graft.VS2026Extension.3a7e5b1c-8f2d-4c6a-b9e1-d5f4a3c2e8b7"
               Version="1.0.0"
               Language="en-US"
-              Publisher="Graft" />
+              Publisher="Aiko Radlingmayr" />
     <DisplayName>Graft - Stacked Branches</DisplayName>
     <Description xml:space="preserve">Visual Studio extension for managing stacked branches and git worktrees with the Graft CLI.</Description>
     <MoreInfo>https://github.com/radaiko/Graft</MoreInfo>

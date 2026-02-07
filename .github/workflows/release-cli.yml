@@ -25,15 +25,20 @@ jobs:
           VERSION="${TAG#cli/v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          git fetch --tags
+          PREV_TAG=$(git tag --list 'cli/v*' --sort=-v:refname | grep -v "^$TAG$" | head -1)
+          echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
+          PREV_TAG: ${{ steps.version.outputs.prev_tag }}
         run: |
           gh release create "cli/v${{ steps.version.outputs.version }}" \
             --title "Graft CLI v${{ steps.version.outputs.version }}" \
             --draft \
-            --generate-notes
+            --generate-notes \
+            ${PREV_TAG:+--notes-start-tag "$PREV_TAG"}
 
   build:
     needs: create-release

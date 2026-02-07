@@ -13,7 +13,7 @@ namespace Graft.VS2026Extension.ToolWindows
             Caption = "Stack Explorer";
         }
 
-        public StackExplorerToolWindow(GraftService? service) : base(null)
+        internal StackExplorerToolWindow(GraftService? service) : base(null)
         {
             Caption = "Stack Explorer";
             Content = new StackExplorerControl(service);

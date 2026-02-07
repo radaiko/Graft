@@ -170,7 +170,7 @@ namespace Graft.VS2026Extension.Commands
             return true;
         }
 
-        private void RunAsync(string statusMessage, Func<Task<CliResult>> action)
+        private void RunAsync(string statusMessage, Func<System.Threading.Tasks.Task<CliResult>> action)
         {
             _package.JoinableTaskFactory.RunAsync(async () =>
             {

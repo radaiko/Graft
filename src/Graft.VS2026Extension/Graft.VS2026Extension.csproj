@@ -2,14 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
+    <RuntimeIdentifier>win</RuntimeIdentifier>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>VSSDK007;VSTHRD010;VSTHRD110;VSTHRD200</WarningsNotAsErrors>
     <RootNamespace>Graft.VS2026Extension</RootNamespace>
     <AssemblyName>Graft.VS2026Extension</AssemblyName>
 
     <!-- VSIX settings -->
+    <CreateVsixContainer>true</CreateVsixContainer>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
     <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
     <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
@@ -21,12 +24,13 @@
 
   <ItemGroup>
     <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.527" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.12.37" ExcludeAssets="runtime" />
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.12.2170">
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.12.40392" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.13.2126">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Tomlyn" Version="0.20.0" />
+    <PackageReference Include="VSIX-SdkProjectAdapter" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,7 +60,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\GraftIcon.png" />
+    <Content Include="Resources\GraftIcon.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
