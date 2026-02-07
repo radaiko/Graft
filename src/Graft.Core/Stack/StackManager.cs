@@ -445,7 +445,10 @@ public static class StackManager
 
         // All done — return to original branch and clean up
         ClearOperationState(repoPath);
-        await git.RunAsync("checkout", opState.OriginalBranch);
+        var checkoutResult = await git.RunAsync("checkout", opState.OriginalBranch);
+        if (!checkoutResult.Success)
+            throw new InvalidOperationException(
+                $"Sync completed but failed to return to original branch '{opState.OriginalBranch}': {checkoutResult.Stderr}");
 
         return result;
     }
@@ -466,7 +469,9 @@ public static class StackManager
             if (File.Exists(Path.Combine(wtGitDir, "MERGE_HEAD")))
                 await wtGit.RunAsync("merge", "--abort");
         }
-        else
+
+        // Also check the main repo (fallback when worktree is gone, or no worktree involved)
+        if (opState?.WorktreePath == null || !Directory.Exists(opState.WorktreePath))
         {
             var gitDir = GitRunner.ResolveGitDir(repoPath);
             if (File.Exists(Path.Combine(gitDir, "MERGE_HEAD")))
@@ -486,10 +491,21 @@ public static class StackManager
     private static async Task<Dictionary<string, string>> GetWorktreeBranchMapAsync(string repoPath, CancellationToken ct)
     {
         var worktrees = await WorktreeManager.ListAsync(repoPath, ct);
+        var normalizedRepoPath = Path.GetFullPath(repoPath)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var map = new Dictionary<string, string>();
         foreach (var wt in worktrees)
         {
-            if (wt.Branch != null)
+            if (wt.Branch == null || wt.IsBare)
+                continue;
+
+            // Skip the main repo itself — only include separate worktrees
+            var normalizedWtPath = Path.GetFullPath(wt.Path)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (string.Equals(normalizedWtPath, normalizedRepoPath, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (Directory.Exists(wt.Path))
                 map[wt.Branch] = wt.Path;
         }
         return map;
@@ -560,6 +576,11 @@ public static class StackManager
                 $"Operation state file has invalid branch value: {path}\n" +
                 $"Delete it and run 'graft --abort' to clean up.");
         }
+
+        // WorktreePath is not path-validated here because symlink resolution
+        // (e.g. /var vs /private/var on macOS) makes path comparison unreliable.
+        // Safety is ensured at usage sites via Directory.Exists checks and git
+        // command failures on non-repo directories.
 
         return state;
     }

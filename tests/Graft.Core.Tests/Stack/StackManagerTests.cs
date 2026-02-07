@@ -377,7 +377,7 @@ public sealed class StackManagerTests : IDisposable
         var result = await StackManager.SyncAsync(_repo.Path);
 
         Assert.False(result.HasConflict);
-        Assert.True(result.BranchResults.Count >= 2);
+        Assert.Equal(2, result.BranchResults.Count);
         Assert.True(result.BranchResults.All(b =>
             b.Status == SyncStatus.Merged || b.Status == SyncStatus.UpToDate));
     }
@@ -444,10 +444,13 @@ public sealed class StackManagerTests : IDisposable
         Assert.True(result.HasConflict);
         Assert.Contains(result.BranchResults, b => b.Status == SyncStatus.Conflict);
 
-        // Verify operation state saved the worktree path
+        // Verify operation state saved the correct worktree path
         var opState = StackManager.LoadOperationState(_repo.Path);
         Assert.NotNull(opState);
         Assert.NotNull(opState.WorktreePath);
+        // Compare by directory name (symlink resolution can differ, e.g. /var vs /private/var on macOS)
+        var expectedDirName = Path.GetFileName(WorktreeManager.GetWorktreePath("conflict-branch", _repo.Path));
+        Assert.Equal(expectedDirName, Path.GetFileName(opState.WorktreePath));
 
         // Clean up: abort the merge in the worktree
         await StackManager.AbortSyncAsync(_repo.Path);
