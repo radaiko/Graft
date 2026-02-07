@@ -5,7 +5,7 @@ using System.Windows.Data;
 
 namespace Graft.VS2026Extension.ToolWindows
 {
-    internal sealed class BoolToVisibilityConverter : IValueConverter
+    public sealed class BoolToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

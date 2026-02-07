@@ -2,7 +2,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -37,7 +36,7 @@ namespace Graft.VS2026Extension
             if (solutionDir != null)
             {
                 GraftService = new GraftService(solutionDir);
-                StatusBarManager = new GraftStatusBarManager(this, GraftService);
+                StatusBarManager = new GraftStatusBarManager(GraftService);
                 StatusBarManager.Initialize();
             }
 

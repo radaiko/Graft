@@ -15,8 +15,9 @@ namespace Graft.VS2026Extension.Graft
     internal sealed class GraftService : IDisposable
     {
         private readonly string _solutionDir;
-        private string? _repoPath;
-        private string? _graftBinaryPath;
+        private readonly string? _repoPath;
+        private readonly string? _gitCommonDir;
+        private readonly string? _graftBinaryPath;
         private readonly FileWatcher _fileWatcher = new FileWatcher();
 
         public event EventHandler? DataChanged;
@@ -32,7 +33,8 @@ namespace Graft.VS2026Extension.Graft
 
             if (_repoPath != null)
             {
-                var graftDir = Path.Combine(ResolveGitCommonDir(_repoPath), "graft");
+                _gitCommonDir = ResolveGitCommonDir(_repoPath);
+                var graftDir = Path.Combine(_gitCommonDir, "graft");
                 _fileWatcher.Changed += (s, e) => DataChanged?.Invoke(this, EventArgs.Empty);
                 _fileWatcher.Watch(graftDir);
             }
@@ -42,9 +44,9 @@ namespace Graft.VS2026Extension.Graft
 
         public string? GetActiveStackName()
         {
-            if (_repoPath == null) return null;
+            if (_gitCommonDir == null) return null;
 
-            var path = Path.Combine(ResolveGitCommonDir(_repoPath), "graft", "active-stack");
+            var path = Path.Combine(_gitCommonDir, "graft", "active-stack");
             if (!File.Exists(path)) return null;
 
             var name = File.ReadAllText(path, Encoding.UTF8).Trim();
@@ -53,10 +55,9 @@ namespace Graft.VS2026Extension.Graft
 
         public List<StackInfo> LoadAllStacks()
         {
-            if (_repoPath == null) return new List<StackInfo>();
-
-            var stacksDir = Path.Combine(ResolveGitCommonDir(_repoPath), "graft", "stacks");
-            if (!Directory.Exists(stacksDir)) return new List<StackInfo>();
+            var stacksDir = GetStacksDirectory();
+            if (stacksDir == null || !Directory.Exists(stacksDir))
+                return new List<StackInfo>();
 
             var activeStack = GetActiveStackName();
             var stacks = new List<StackInfo>();
@@ -76,15 +77,20 @@ namespace Graft.VS2026Extension.Graft
 
         public string[] ListStackNames()
         {
-            if (_repoPath == null) return Array.Empty<string>();
-
-            var stacksDir = Path.Combine(ResolveGitCommonDir(_repoPath), "graft", "stacks");
-            if (!Directory.Exists(stacksDir)) return Array.Empty<string>();
+            var stacksDir = GetStacksDirectory();
+            if (stacksDir == null || !Directory.Exists(stacksDir))
+                return Array.Empty<string>();
 
             return Directory.GetFiles(stacksDir, "*.toml")
                 .Select(f => Path.GetFileNameWithoutExtension(f))
                 .OrderBy(n => n)
                 .ToArray();
+        }
+
+        private string? GetStacksDirectory()
+        {
+            if (_gitCommonDir == null) return null;
+            return Path.Combine(_gitCommonDir, "graft", "stacks");
         }
 
         private StackInfo? LoadStackFromFile(string filePath)
@@ -151,8 +157,9 @@ namespace Graft.VS2026Extension.Graft
 
                 return stack;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Failed to load stack from {filePath}: {ex.Message}");
                 return null;
             }
         }
@@ -209,17 +216,24 @@ namespace Graft.VS2026Extension.Graft
             }
         }
 
+        private static string SanitizeArgument(string value)
+        {
+            if (value.IndexOfAny(new[] { '"', '\\', '\0', '\n', '\r' }) >= 0)
+                throw new ArgumentException($"Argument contains invalid characters: '{value}'");
+            return value;
+        }
+
         public async Task<CliResult> InitStackAsync(string name, string? baseBranch = null)
         {
-            var args = $"stack init \"{name}\"";
+            var args = $"stack init \"{SanitizeArgument(name)}\"";
             if (baseBranch != null)
-                args += $" -b \"{baseBranch}\"";
+                args += $" -b \"{SanitizeArgument(baseBranch)}\"";
             return await RunCommandAsync(args).ConfigureAwait(false);
         }
 
         public async Task<CliResult> PushBranchAsync(string branchName, bool create = false)
         {
-            var args = $"stack push \"{branchName}\"";
+            var args = $"stack push \"{SanitizeArgument(branchName)}\"";
             if (create)
                 args += " -c";
             return await RunCommandAsync(args).ConfigureAwait(false);
@@ -234,13 +248,13 @@ namespace Graft.VS2026Extension.Graft
         {
             var args = "stack sync";
             if (branchName != null)
-                args += $" \"{branchName}\"";
+                args += $" \"{SanitizeArgument(branchName)}\"";
             return await RunCommandAsync(args).ConfigureAwait(false);
         }
 
         public async Task<CliResult> SwitchStackAsync(string name)
         {
-            return await RunCommandAsync($"stack switch \"{name}\"").ConfigureAwait(false);
+            return await RunCommandAsync($"stack switch \"{SanitizeArgument(name)}\"").ConfigureAwait(false);
         }
 
         public async Task<CliResult> StackLogAsync()
@@ -285,6 +299,9 @@ namespace Graft.VS2026Extension.Graft
             var extensions = new[] { "", ".exe" };
             foreach (var dir in pathEnv.Split(Path.PathSeparator))
             {
+                if (string.IsNullOrWhiteSpace(dir))
+                    continue;
+
                 foreach (var ext in extensions)
                 {
                     var candidate = Path.Combine(dir, executable + ext);

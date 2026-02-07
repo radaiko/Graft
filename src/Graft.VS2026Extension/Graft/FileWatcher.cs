@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -33,10 +34,14 @@ namespace Graft.VS2026Extension.Graft
             _watcher.Created += OnFileEvent;
             _watcher.Deleted += OnFileEvent;
             _watcher.Renamed += OnRenamedEvent;
+            _watcher.Error += OnError;
         }
 
         public void Stop()
         {
+            if (_watcher != null)
+                _watcher.EnableRaisingEvents = false;
+
             lock (_lock)
             {
                 _debounceTimer?.Dispose();
@@ -45,7 +50,6 @@ namespace Graft.VS2026Extension.Graft
 
             if (_watcher != null)
             {
-                _watcher.EnableRaisingEvents = false;
                 _watcher.Dispose();
                 _watcher = null;
             }
@@ -59,6 +63,11 @@ namespace Graft.VS2026Extension.Graft
         private void OnRenamedEvent(object sender, RenamedEventArgs e)
         {
             ScheduleNotification();
+        }
+
+        private void OnError(object sender, ErrorEventArgs e)
+        {
+            Debug.WriteLine($"Graft FileWatcher error: {e.GetException().Message}");
         }
 
         private void ScheduleNotification()

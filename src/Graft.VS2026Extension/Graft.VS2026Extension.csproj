@@ -20,9 +20,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.*" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.12.*" ExcludeAssets="runtime" />
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.12.*">
+    <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.527" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.12.37" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.12.2170">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

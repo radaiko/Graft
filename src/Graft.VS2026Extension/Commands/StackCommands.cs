@@ -150,10 +150,13 @@ namespace Graft.VS2026Extension.Commands
             {
                 var window = await _package.ShowToolWindowAsync(
                     typeof(StackExplorerToolWindow), 0, true,
-                    _package.DisposalToken).ConfigureAwait(false);
+                    _package.DisposalToken);
 
                 if (window == null)
+                {
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                     ShowMessage("Failed to open Stack Explorer window.");
+                }
             });
         }
 
@@ -171,6 +174,7 @@ namespace Graft.VS2026Extension.Commands
         {
             _package.JoinableTaskFactory.RunAsync(async () =>
             {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 var outputPane = GraftOutputPane.GetPane();
                 outputPane?.OutputStringThreadSafe($"> {statusMessage}\n");
 

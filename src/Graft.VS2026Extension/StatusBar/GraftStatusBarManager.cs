@@ -7,12 +7,10 @@ namespace Graft.VS2026Extension.StatusBar
 {
     internal sealed class GraftStatusBarManager : IDisposable
     {
-        private readonly AsyncPackage _package;
         private readonly GraftService _service;
 
-        public GraftStatusBarManager(AsyncPackage package, GraftService service)
+        public GraftStatusBarManager(GraftService service)
         {
-            _package = package;
             _service = service;
         }
 

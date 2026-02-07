@@ -10,7 +10,6 @@
     <DisplayName>Graft - Stacked Branches</DisplayName>
     <Description xml:space="preserve">Visual Studio extension for managing stacked branches and git worktrees with the Graft CLI.</Description>
     <MoreInfo>https://github.com/radaiko/Graft</MoreInfo>
-    <License>LICENSE</License>
     <Icon>Resources\GraftIcon.png</Icon>
     <Tags>git, stacked branches, worktrees, graft</Tags>
   </Metadata>
