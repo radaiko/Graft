@@ -87,13 +87,13 @@ public static class NukeManager
         var goneBranches = branchResult.Stdout
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(line => line.Trim())
-            .Where(line => !line.StartsWith('*'))
+            .Where(line => !line.StartsWith('*') && !line.StartsWith('+'))
             .Where(line => line.Contains('[') && line.Contains(": gone]"))
             .Select(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0]);
 
         foreach (var branchName in goneBranches)
         {
-            var deleteResult = await git.RunAsync("branch", "-d", branchName);
+            var deleteResult = await git.RunAsync("branch", "-D", branchName);
             if (deleteResult.Success)
                 result.Removed.Add(branchName);
             else
