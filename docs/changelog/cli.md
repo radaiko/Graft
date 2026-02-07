@@ -13,10 +13,15 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ## [Unreleased] -- Next
 
+### Changed
+- **CLI:** `--force` now only overrides dirty checks, never skips confirmation prompts
+- **CLI:** All destructive commands (`nuke`, `wt del`, `stack del`) always prompt for confirmation
+
 ### Fixed
 - **Core:** `graft stack sync` no longer fails when a stack branch has an active worktree (#3)
 
 ### Removed
+- **CLI:** Removed unused `--force` flag from `graft stack del` (no dirty checks to override)
 - **Web UI:** Remove unused settings page
 
 

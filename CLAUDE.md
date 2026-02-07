@@ -72,6 +72,7 @@ All code in Graft.Core and Graft.Cli must be AOT-safe:
 - Error messages: Include what went wrong, why, and how to fix it (see [Error Handling](docs/spec/error-handling.md))
 - Changelogs: Per-product in `docs/changelog/` (cli.md, vscode.md, vs.md, jetbrains.md). Always use [Keep a Changelog](https://keepachangelog.com/) style (Added, Changed, Removed, Fixed sections)
 - Git: Never commit directly to main/master. Always create a branch and open a PR.
+- Git: Always squash-merge PRs. Never rebase shared branches. Use `git pull` (merge) to sync with remote.
 
 ## CLI Command Structure
 

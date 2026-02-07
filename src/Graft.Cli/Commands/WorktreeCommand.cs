@@ -56,7 +56,7 @@ public static class WorktreeCommand
     private static Command CreateDelCommand()
     {
         var branchArg = new Argument<string>("branch") { Description = "Branch whose worktree to delete" };
-        var forceOption = new Option<bool>("--force") { Description = "Force removal (skip dirty checks)" };
+        var forceOption = new Option<bool>("--force") { Description = "Override dirty checks" };
         forceOption.Aliases.Add("-f");
 
         var command = new Command("del", "Delete a worktree");
@@ -68,6 +68,22 @@ public static class WorktreeCommand
             var branch = parseResult.GetValue(branchArg)!;
             var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
+
+            var wtPath = WorktreeManager.GetWorktreePath(branch, repoPath);
+            if (!Directory.Exists(wtPath))
+            {
+                Console.Error.WriteLine($"Error: No worktree found for '{branch}'. Use 'graft wt list' to see existing worktrees.");
+                Environment.ExitCode = 1;
+                return;
+            }
+
+            Console.Write($"Remove worktree for '{branch}'? [y/N] ");
+            var response = Console.ReadLine();
+            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Aborted.");
+                return;
+            }
 
             try
             {

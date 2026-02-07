@@ -455,15 +455,27 @@ public static class StackCommand
             var name = parseResult.GetValue(nameArg)!;
             var repoPath = Directory.GetCurrentDirectory();
 
+            // Validate stack exists before prompting
+            var stacks = ConfigLoader.ListStacks(repoPath);
+            if (!stacks.Contains(name))
+            {
+                Console.Error.WriteLine($"Error: Stack '{name}' not found. Use 'graft stack list' to see available stacks.");
+                Environment.ExitCode = 1;
+                return;
+            }
+
+            Console.Write($"Delete stack '{name}'? Branches will be kept. [y/N] ");
+            var response = Console.ReadLine();
+            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Aborted.");
+                return;
+            }
+
             try
             {
                 StackManager.Delete(name, repoPath);
                 Console.WriteLine($"Deleted stack '{name}'. Branches are kept.");
-            }
-            catch (FileNotFoundException)
-            {
-                Console.Error.WriteLine($"Error: Stack '{name}' not found.");
-                Environment.ExitCode = 1;
             }
             catch (Exception ex)
             {
