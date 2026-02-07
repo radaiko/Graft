@@ -11,6 +11,12 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ---
 
+## [0.2.2]
+
+### Fixed
+- **Core:** `graft nuke branches` now uses force delete (`git branch -D`) so branches whose upstream is gone are actually removed (#13)
+- **Core:** `graft nuke branches` correctly filters out branches checked out in worktrees (git 2.36+ `+` prefix)
+
 ## [0.2.1]
 
 ### Changed
