@@ -32,80 +32,40 @@ runs:
       run: |
         set -euo pipefail
 
-        # Determine commit range
-        if [ -z "$PREV_TAG" ]; then
-          echo "No previous tag — including all commits up to $TAG"
-          RANGE="$TAG"
-        else
-          RANGE="${PREV_TAG}..${TAG}"
-        fi
+        # Determine date range from tags for bulk PR query
+        TAG_DATE=$(git log -1 --format="%aI" "$TAG")
 
-        # Collect all commit SHAs in range
-        SHAS=$(git log "$RANGE" --format="%H" 2>/dev/null || echo "")
-        if [ -z "$SHAS" ]; then
-          echo "notes=No changes." >> "$GITHUB_OUTPUT"
-          exit 0
-        fi
-
-        # Find PRs for these commits, filtered by product label
-        SEEN_PRS=""
-        NOTES=""
         if [ -n "$PREV_TAG" ]; then
+          PREV_DATE=$(git log -1 --format="%aI" "$PREV_TAG")
+          SEARCH_QUERY="merged:${PREV_DATE}..${TAG_DATE}"
           FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${TAG}"
         else
-          FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD 2>/dev/null | head -1 || echo "")
-          if [ -n "$FIRST_COMMIT" ]; then
-            FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${FIRST_COMMIT}...${TAG}"
-          else
-            FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${TAG}"
-          fi
+          SEARCH_QUERY="merged:<=${TAG_DATE}"
+          FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${TAG}"
         fi
 
-        while IFS= read -r SHA; do
-          [ -z "$SHA" ] && continue
+        # Bulk query: fetch all merged PRs with the product label in one call
+        NOTES=""
+        PR_LIST=$(gh pr list \
+          --state merged \
+          --label "$PRODUCT_LABEL" \
+          --search "$SEARCH_QUERY" \
+          --json number,title,author \
+          --limit 200 \
+          --jq '.[] | "* \(.title) by @\(.author.login) in #\(.number)"')
 
-          # Get PRs associated with this commit
-          PR_DATA=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/pulls" \
-            --jq '.[] | {number, title, user: .user.login, labels: [(.labels // [])[] | .name]}' 2>/dev/null || echo "")
-
-          [ -z "$PR_DATA" ] && continue
-
-          while IFS= read -r PR_JSON; do
-            [ -z "$PR_JSON" ] && continue
-
-            NUMBER=$(echo "$PR_JSON" | jq -r '.number')
-
-            # Skip if already seen
-            if echo "$SEEN_PRS" | grep -qw "$NUMBER" 2>/dev/null; then
-              continue
-            fi
-
-            # Check if PR has the product label
-            HAS_LABEL=$(echo "$PR_JSON" | jq -r --arg label "$PRODUCT_LABEL" '.labels[] | select(. == $label)' 2>/dev/null)
-            if [ -z "$HAS_LABEL" ]; then
-              continue
-            fi
-
-            TITLE=$(echo "$PR_JSON" | jq -r '.title')
-            USER=$(echo "$PR_JSON" | jq -r '.user')
-
-            NOTES="${NOTES}* ${TITLE} by @${USER} in #${NUMBER}"$'\n'
-            SEEN_PRS="${SEEN_PRS} ${NUMBER}"
-          done <<< "$PR_DATA"
-        done <<< "$SHAS"
-
-        # Build final notes
-        if [ -z "$NOTES" ]; then
-          FINAL="No product-specific changes in this release."
+        if [ -n "$PR_LIST" ]; then
+          NOTES="## What's Changed"$'\n'"${PR_LIST}"$'\n'
         else
-          FINAL="## What's Changed"$'\n'"${NOTES}"
+          NOTES="No product-specific changes in this release."
         fi
 
-        FINAL="${FINAL}"$'\n'$'\n'"**Full Changelog**: ${FULL_CHANGELOG_URL}"
+        FINAL="${NOTES}"$'\n'"**Full Changelog**: ${FULL_CHANGELOG_URL}"
 
-        # Write multiline output
+        # Write multiline output with unique delimiter
+        DELIM="RELEASE_NOTES_EOF_${RANDOM}_$$"
         {
-          echo "notes<<RELEASE_NOTES_EOF"
+          echo "notes<<${DELIM}"
           echo "$FINAL"
-          echo "RELEASE_NOTES_EOF"
+          echo "${DELIM}"
         } >> "$GITHUB_OUTPUT"

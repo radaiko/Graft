@@ -15,3 +15,8 @@
   - changed-files:
       - any-glob-to-any-file:
           - "src/Graft.VS2026Extension/**"
+
+"product:jetbrains":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/Graft.JetbrainsExtension/**"
