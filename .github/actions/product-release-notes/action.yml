@@ -44,8 +44,10 @@ runs:
           FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${TAG}"
         fi
 
-        # Extract unique PR numbers from commit messages (squash-merge format: "Title (#NNN)")
-        mapfile -t PR_NUMS < <(git log "$RANGE" --format="%s" | grep -oE '#[0-9]+' | tr -d '#' | sort -un)
+        # Extract unique PR numbers from squash-merge "(#NNN)" suffix or "Merge pull request #NNN" prefix
+        mapfile -t PR_NUMS < <(git log "$RANGE" --format="%s" \
+          | grep -oP '(?:\(#|\bMerge pull request #)\K[0-9]+' \
+          | sort -un)
 
         NOTES=""
 
@@ -67,7 +69,7 @@ runs:
 
             if [ -n "$HAS_LABEL" ]; then
               TITLE=$(echo "$RESULT" | jq -r ".data.repository.pr${i}.title")
-              USER=$(echo "$RESULT" | jq -r ".data.repository.pr${i}.author.login")
+              USER=$(echo "$RESULT" | jq -r ".data.repository.pr${i}.author.login // \"ghost\"")
               NOTES="${NOTES}* ${TITLE} by @${USER} in #${PR_NUMS[$i]}"$'\n'
             fi
           done

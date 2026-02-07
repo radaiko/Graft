@@ -44,11 +44,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_NOTES: ${{ steps.notes.outputs.notes }}
         run: |
+          printf '%s' "$RELEASE_NOTES" > /tmp/release-notes.md
           gh release create "vs/v${{ steps.version.outputs.version }}" \
             --title "VS Extension v${{ steps.version.outputs.version }}" \
             --draft \
             --latest=false \
-            --notes "$RELEASE_NOTES"
+            --notes-file /tmp/release-notes.md
 
   build:
     needs: create-release

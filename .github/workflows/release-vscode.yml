@@ -78,8 +78,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_NOTES: ${{ steps.notes.outputs.notes }}
         run: |
+          printf '%s' "$RELEASE_NOTES" > /tmp/release-notes.md
           gh release create "vscode/v${{ steps.version.outputs.version }}" \
             --title "Graft VS Code Extension v${{ steps.version.outputs.version }}" \
             --latest=false \
-            --notes "$RELEASE_NOTES" \
+            --notes-file /tmp/release-notes.md \
             src/Graft.VSCodeExtension/*.vsix
