@@ -1,0 +1,17 @@
+"product:cli":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/Graft.Core/**"
+          - "src/Graft.Cli/**"
+          - "tests/Graft.Core.Tests/**"
+          - "tests/Graft.Cli.Tests/**"
+
+"product:vscode":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/Graft.VSCodeExtension/**"
+
+"product:vs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/Graft.VS2026Extension/**"

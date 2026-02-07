@@ -1,0 +1,111 @@
+name: Product Release Notes
+description: Generate release notes filtered by product label
+
+inputs:
+  product-label:
+    description: "The product label to filter PRs by (e.g. product:cli)"
+    required: true
+  tag:
+    description: "The current release tag"
+    required: true
+  previous-tag:
+    description: "The previous release tag (empty for first release)"
+    required: false
+    default: ""
+
+outputs:
+  notes:
+    description: "The generated release notes markdown"
+    value: ${{ steps.generate.outputs.notes }}
+
+runs:
+  using: composite
+  steps:
+    - name: Generate filtered release notes
+      id: generate
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PRODUCT_LABEL: ${{ inputs.product-label }}
+        TAG: ${{ inputs.tag }}
+        PREV_TAG: ${{ inputs.previous-tag }}
+      run: |
+        set -euo pipefail
+
+        # Determine commit range
+        if [ -z "$PREV_TAG" ]; then
+          echo "No previous tag — including all commits up to $TAG"
+          RANGE="$TAG"
+        else
+          RANGE="${PREV_TAG}..${TAG}"
+        fi
+
+        # Collect all commit SHAs in range
+        SHAS=$(git log "$RANGE" --format="%H" 2>/dev/null || echo "")
+        if [ -z "$SHAS" ]; then
+          echo "notes=No changes." >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # Find PRs for these commits, filtered by product label
+        SEEN_PRS=""
+        NOTES=""
+        if [ -n "$PREV_TAG" ]; then
+          FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${TAG}"
+        else
+          FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD 2>/dev/null | head -1 || echo "")
+          if [ -n "$FIRST_COMMIT" ]; then
+            FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${FIRST_COMMIT}...${TAG}"
+          else
+            FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${TAG}"
+          fi
+        fi
+
+        while IFS= read -r SHA; do
+          [ -z "$SHA" ] && continue
+
+          # Get PRs associated with this commit
+          PR_DATA=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/pulls" \
+            --jq '.[] | {number, title, user: .user.login, labels: [(.labels // [])[] | .name]}' 2>/dev/null || echo "")
+
+          [ -z "$PR_DATA" ] && continue
+
+          while IFS= read -r PR_JSON; do
+            [ -z "$PR_JSON" ] && continue
+
+            NUMBER=$(echo "$PR_JSON" | jq -r '.number')
+
+            # Skip if already seen
+            if echo "$SEEN_PRS" | grep -qw "$NUMBER" 2>/dev/null; then
+              continue
+            fi
+
+            # Check if PR has the product label
+            HAS_LABEL=$(echo "$PR_JSON" | jq -r --arg label "$PRODUCT_LABEL" '.labels[] | select(. == $label)' 2>/dev/null)
+            if [ -z "$HAS_LABEL" ]; then
+              continue
+            fi
+
+            TITLE=$(echo "$PR_JSON" | jq -r '.title')
+            USER=$(echo "$PR_JSON" | jq -r '.user')
+
+            NOTES="${NOTES}* ${TITLE} by @${USER} in #${NUMBER}"$'\n'
+            SEEN_PRS="${SEEN_PRS} ${NUMBER}"
+          done <<< "$PR_DATA"
+        done <<< "$SHAS"
+
+        # Build final notes
+        if [ -z "$NOTES" ]; then
+          FINAL="No product-specific changes in this release."
+        else
+          FINAL="## What's Changed"$'\n'"${NOTES}"
+        fi
+
+        FINAL="${FINAL}"$'\n'$'\n'"**Full Changelog**: ${FULL_CHANGELOG_URL}"
+
+        # Write multiline output
+        {
+          echo "notes<<RELEASE_NOTES_EOF"
+          echo "$FINAL"
+          echo "RELEASE_NOTES_EOF"
+        } >> "$GITHUB_OUTPUT"

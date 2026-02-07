@@ -23,21 +23,29 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG#vs/v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           git fetch --tags
           PREV_TAG=$(git tag --list 'vs/v*' --sort=-v:refname | grep -v "^$TAG$" | head -1)
           echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
 
+      - name: Generate filtered release notes
+        id: notes
+        uses: ./.github/actions/product-release-notes
+        with:
+          product-label: "product:vs"
+          tag: ${{ steps.version.outputs.tag }}
+          previous-tag: ${{ steps.version.outputs.prev_tag }}
+
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
-          PREV_TAG: ${{ steps.version.outputs.prev_tag }}
+          RELEASE_NOTES: ${{ steps.notes.outputs.notes }}
         run: |
           gh release create "vs/v${{ steps.version.outputs.version }}" \
             --title "VS Extension v${{ steps.version.outputs.version }}" \
             --draft \
-            --generate-notes \
             --latest=false \
-            ${PREV_TAG:+--notes-start-tag "$PREV_TAG"}
+            --notes "$RELEASE_NOTES"
 
   build:
     needs: create-release

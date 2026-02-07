@@ -62,14 +62,21 @@ jobs:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: npx @vscode/vsce publish --no-update-package-json
 
+      - name: Generate filtered release notes
+        id: notes
+        uses: ./.github/actions/product-release-notes
+        with:
+          product-label: "product:vscode"
+          tag: ${{ steps.version.outputs.tag }}
+          previous-tag: ${{ steps.version.outputs.prev_tag }}
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          PREV_TAG: ${{ steps.version.outputs.prev_tag }}
+          RELEASE_NOTES: ${{ steps.notes.outputs.notes }}
         run: |
           gh release create "vscode/v${{ steps.version.outputs.version }}" \
             --title "Graft VS Code Extension v${{ steps.version.outputs.version }}" \
-            --generate-notes \
             --latest=false \
-            ${PREV_TAG:+--notes-start-tag "$PREV_TAG"} \
+            --notes "$RELEASE_NOTES" \
             src/Graft.VSCodeExtension/*.vsix

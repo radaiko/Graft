@@ -29,16 +29,23 @@ jobs:
           PREV_TAG=$(git tag --list 'cli/v*' --sort=-v:refname | grep -v "^$TAG$" | head -1)
           echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
 
+      - name: Generate filtered release notes
+        id: notes
+        uses: ./.github/actions/product-release-notes
+        with:
+          product-label: "product:cli"
+          tag: ${{ steps.version.outputs.tag }}
+          previous-tag: ${{ steps.version.outputs.prev_tag }}
+
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
-          PREV_TAG: ${{ steps.version.outputs.prev_tag }}
+          RELEASE_NOTES: ${{ steps.notes.outputs.notes }}
         run: |
           gh release create "cli/v${{ steps.version.outputs.version }}" \
             --title "Graft CLI v${{ steps.version.outputs.version }}" \
             --draft \
-            --generate-notes \
-            ${PREV_TAG:+--notes-start-tag "$PREV_TAG"}
+            --notes "$RELEASE_NOTES"
 
   build:
     needs: create-release
