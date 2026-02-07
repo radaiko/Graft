@@ -84,16 +84,17 @@ public static class NukeManager
         var branchResult = await git.RunAsync("branch", "-vv");
         if (!branchResult.Success) return result;
 
+        // git branch -vv uses a fixed 2-char prefix: "  " normal, "* " current, "+ " worktree
         var goneBranches = branchResult.Stdout
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(line => line.Trim())
-            .Where(line => !line.StartsWith('*'))
+            .Where(line => line.Length > 2 && line[0] == ' ')
+            .Select(line => line[2..].TrimStart())
             .Where(line => line.Contains('[') && line.Contains(": gone]"))
             .Select(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0]);
 
         foreach (var branchName in goneBranches)
         {
-            var deleteResult = await git.RunAsync("branch", "-d", branchName);
+            var deleteResult = await git.RunAsync("branch", "-D", branchName);
             if (deleteResult.Success)
                 result.Removed.Add(branchName);
             else
