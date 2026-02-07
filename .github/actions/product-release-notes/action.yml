@@ -1,0 +1,92 @@
+name: Product Release Notes
+description: Generate release notes filtered by product label
+
+inputs:
+  product-label:
+    description: "The product label to filter PRs by (e.g. product:cli)"
+    required: true
+  tag:
+    description: "The current release tag"
+    required: true
+  previous-tag:
+    description: "The previous release tag (empty for first release)"
+    required: false
+    default: ""
+
+outputs:
+  notes:
+    description: "The generated release notes markdown"
+    value: ${{ steps.generate.outputs.notes }}
+
+runs:
+  using: composite
+  steps:
+    - name: Generate filtered release notes
+      id: generate
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PRODUCT_LABEL: ${{ inputs.product-label }}
+        TAG: ${{ inputs.tag }}
+        PREV_TAG: ${{ inputs.previous-tag }}
+      run: |
+        set -euo pipefail
+
+        OWNER="${GITHUB_REPOSITORY%%/*}"
+        REPO="${GITHUB_REPOSITORY##*/}"
+
+        # Determine commit range and changelog URL
+        if [ -n "$PREV_TAG" ]; then
+          RANGE="${PREV_TAG}..${TAG}"
+          FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${TAG}"
+        else
+          RANGE="$TAG"
+          FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${TAG}"
+        fi
+
+        # Extract unique PR numbers from squash-merge "(#NNN)" suffix or "Merge pull request #NNN" prefix
+        mapfile -t PR_NUMS < <(git log "$RANGE" --format="%s" \
+          | grep -oP '(?:\(#|\bMerge pull request #)\K[0-9]+' \
+          | sort -un)
+
+        NOTES=""
+
+        if [ "${#PR_NUMS[@]}" -gt 0 ]; then
+          # Build a single GraphQL query to fetch all PRs with their labels
+          QUERY='query { repository(owner: "'"$OWNER"'", name: "'"$REPO"'") {'
+          for i in "${!PR_NUMS[@]}"; do
+            QUERY="${QUERY} pr${i}: pullRequest(number: ${PR_NUMS[$i]}) { number title author { login } labels(first: 10) { nodes { name } } }"
+          done
+          QUERY="${QUERY} }}"
+
+          RESULT=$(gh api graphql -f query="$QUERY")
+
+          # Filter by product label and format
+          for i in "${!PR_NUMS[@]}"; do
+            HAS_LABEL=$(echo "$RESULT" | jq -r \
+              --arg label "$PRODUCT_LABEL" \
+              ".data.repository.pr${i}.labels.nodes[]? | select(.name == \$label) | .name")
+
+            if [ -n "$HAS_LABEL" ]; then
+              TITLE=$(echo "$RESULT" | jq -r ".data.repository.pr${i}.title")
+              USER=$(echo "$RESULT" | jq -r ".data.repository.pr${i}.author.login // \"ghost\"")
+              NOTES="${NOTES}* ${TITLE} by @${USER} in #${PR_NUMS[$i]}"$'\n'
+            fi
+          done
+        fi
+
+        if [ -z "$NOTES" ]; then
+          FINAL="No product-specific changes in this release."
+        else
+          FINAL="## What's Changed"$'\n'"${NOTES}"
+        fi
+
+        FINAL="${FINAL}"$'\n'"**Full Changelog**: ${FULL_CHANGELOG_URL}"
+
+        # Write multiline output with unique delimiter
+        DELIM="RELEASE_NOTES_EOF_${RANDOM}_$$"
+        {
+          echo "notes<<${DELIM}"
+          echo "$FINAL"
+          echo "${DELIM}"
+        } >> "$GITHUB_OUTPUT"
