@@ -24,10 +24,10 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ### Added
 
-- Stack management -- `graft stack init`, `push`, `pop`, `drop`, `shift`, `commit`, `sync`, `log`, `del`
-- Active stack tracking -- set once with `graft stack init` or `graft stack switch`, all commands use it automatically
-- Worktree management -- `graft wt` to create, delete, list, and jump into worktrees
-- Nuke operations -- bulk cleanup of worktrees, stacks, and gone branches
-- Auto-update with background checking and staged binary replacement
-- Cross-platform native AOT binaries for Linux, macOS, and Windows (x64 + arm64)
-- Browser-based web UI for stacks, worktrees, and nuke operations
+- **Core:** Stack management -- `graft stack init`, `push`, `pop`, `drop`, `shift`, `commit`, `sync`, `log`, `del`
+- **Core:** Active stack tracking -- set once with `graft stack init` or `graft stack switch`, all commands use it automatically
+- **Core:** Worktree management -- `graft wt` to create, delete, list, and jump into worktrees
+- **Core:** Nuke operations -- bulk cleanup of worktrees, stacks, and gone branches
+- **Core:** Auto-update with background checking and staged binary replacement
+- **Build:** Cross-platform native AOT binaries for Linux, macOS, and Windows (x64 + arm64)
+- **Web UI:** Browser-based web UI for stacks, worktrees, and nuke operations

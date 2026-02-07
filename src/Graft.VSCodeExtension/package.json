@@ -182,6 +182,16 @@
           "when": "view == graftStacks && viewItem == graft.branch.withPr",
           "group": "inline"
         }
+      ],
+      "commandPalette": [
+        {
+          "command": "graft.openPr",
+          "when": "false"
+        },
+        {
+          "command": "graft.checkoutBranch",
+          "when": "false"
+        }
       ]
     },
     "configuration": {

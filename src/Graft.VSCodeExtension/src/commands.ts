@@ -162,6 +162,7 @@ export function registerCommands(
       vscode.window.showInformationMessage("Stack synced.");
     } catch (e) {
       const msg = errorMessage(e);
+      treeProvider.refreshImmediate();
       // TODO: CLI doesn't expose structured error codes yet — this string
       // match is coupled to the CLI's error wording and should be replaced
       // with exit code or machine-readable payload when available.

@@ -34,8 +34,6 @@ export class FileWatcher {
     // Packed refs (git gc packs loose refs into this file)
     addWatcher(gitCommonDir, "packed-refs");
 
-    // Index (staging area changes — detects git add/reset)
-    addWatcher(gitCommonDir, "index");
   }
 
   private trigger(): void {
