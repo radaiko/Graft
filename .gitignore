@@ -1,0 +1,8 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+node_modules/
+src/Graft.Cli/wwwroot/
+.playwright-mcp/

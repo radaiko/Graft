@@ -1,0 +1,201 @@
+:root {
+  /* Base palette — deep charcoal with blue undertone */
+  --bg-root: #0f1117;
+  --bg-surface: #161821;
+  --bg-raised: #1c1f2b;
+  --bg-hover: #232736;
+  --bg-active: #2a2e3f;
+
+  /* Borders — subtle but present */
+  --border: #2a2e3f;
+  --border-strong: #3d4258;
+
+  /* Text hierarchy */
+  --text-primary: #e2e5f0;
+  --text-secondary: #8b8fa8;
+  --text-tertiary: #5c6078;
+  --text-inverse: #0f1117;
+
+  /* Accent — electric teal, the "graft" color */
+  --accent: #3eebbe;
+  --accent-dim: #2a9e80;
+  --accent-glow: rgba(62, 235, 190, 0.12);
+
+  /* Git state colors */
+  --color-synced: #3eebbe;
+  --color-stale: #f5a623;
+  --color-conflict: #f5475b;
+  --color-head: #7c8bff;
+
+  /* Semantic */
+  --color-danger: #f5475b;
+  --color-success: #3eebbe;
+  --color-warning: #f5a623;
+
+  /* Typography */
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* Transitions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+}
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-root);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* Utility: code/mono spans */
+code, .mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* Button base */
+button {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Primary button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-color: transparent;
+}
+
+.btn-accent:hover:not(:disabled) {
+  background: var(--accent-dim);
+  border-color: transparent;
+}
+
+.btn-danger {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 50%, transparent);
+}
+
+/* Input base */
+input[type="text"], textarea, select {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-root);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+input[type="text"]:focus, textarea:focus, select:focus {
+  border-color: var(--accent-dim);
+}
+
+select {
+  cursor: pointer;
+}
+
+/* Label */
+label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

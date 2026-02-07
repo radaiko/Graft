@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>graft</AssemblyName>
+    <Version>0.1.0</Version>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- Tomlyn produces trim warnings (IL2104) that are safe to suppress -->
+    <NoWarn>$(NoWarn);IL2104</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Graft.Core\Graft.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.2" />
+  </ItemGroup>
+
+  <!-- Frontend build: npm ci -->
+  <Target Name="BuildFrontend"
+          BeforeTargets="BuildFrontendAssets"
+          Condition="Exists('frontend/package.json')"
+          Inputs="frontend/package-lock.json"
+          Outputs="frontend/node_modules/.package-lock.stamp">
+    <Exec Command="npm ci --prefix frontend" />
+    <Touch Files="frontend/node_modules/.package-lock.stamp" AlwaysCreate="true" />
+  </Target>
+
+  <!-- Frontend build: vite build -->
+  <Target Name="BuildFrontendAssets"
+          BeforeTargets="CollectFrontendResources"
+          Condition="Exists('frontend/package.json')"
+          Inputs="frontend/package.json;frontend/svelte.config.js;frontend/src/**/*;frontend/index.html;frontend/vite.config.js"
+          Outputs="wwwroot/.build.stamp">
+    <Exec Command="npm run build --prefix frontend" />
+    <Touch Files="wwwroot/.build.stamp" AlwaysCreate="true" />
+  </Target>
+
+  <!-- Collect wwwroot as embedded resources AFTER frontend build, BEFORE resource
+       processing. Hooks into AssignTargetPaths so items flow through the full
+       PrepareResourceNames → CoreCompile pipeline and invalidate incremental builds. -->
+  <Target Name="CollectFrontendResources" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <EmbeddedResource Include="wwwroot/**" Exclude="wwwroot/.build.stamp" />
+    </ItemGroup>
+  </Target>
+
+</Project>

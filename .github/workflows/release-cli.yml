@@ -1,0 +1,146 @@
+name: Release CLI
+
+on:
+  push:
+    tags:
+      - "cli/v*"
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#cli/v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Require release notes
+        run: |
+          NOTES_FILE="docs/release/cli/v${{ steps.version.outputs.version }}.md"
+          if [ ! -f "$NOTES_FILE" ]; then
+            echo "::error::Release notes not found at ${NOTES_FILE}. Create this file before tagging a release."
+            exit 1
+          fi
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "cli/v${{ steps.version.outputs.version }}" \
+            --title "Graft CLI v${{ steps.version.outputs.version }}" \
+            --draft \
+            --notes-file "docs/release/cli/v${{ steps.version.outputs.version }}.md"
+
+  build:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+            archive: tar.gz
+          - rid: linux-arm64
+            os: ubuntu-latest
+            archive: tar.gz
+            cross: true
+          - rid: win-x64
+            os: windows-latest
+            archive: zip
+          - rid: win-arm64
+            os: windows-latest
+            archive: zip
+          - rid: osx-arm64
+            os: macos-latest
+            archive: tar.gz
+          - rid: osx-x64
+            os: macos-15-intel
+            archive: tar.gz
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/Graft.Cli/frontend/package-lock.json
+
+      - name: Install cross-compilation toolchain (linux-arm64)
+        if: matrix.cross
+        run: |
+          sudo dpkg --add-architecture arm64
+          # Restrict all existing sources to amd64 only
+          for f in /etc/apt/sources.list.d/*.sources; do
+            sudo sed -i '/^Types: /a Architectures: amd64' "$f"
+          done
+          # Add arm64 sources from ports
+          cat <<'SOURCES' | sudo tee /etc/apt/sources.list.d/arm64-ports.sources
+          Types: deb
+          URIs: http://ports.ubuntu.com/ubuntu-ports
+          Suites: noble noble-updates noble-security
+          Components: main universe
+          Architectures: arm64
+          SOURCES
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu zlib1g-dev:arm64
+
+      - name: Publish
+        run: >
+          dotnet publish src/Graft.Cli/Graft.Cli.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          /p:Version=${{ needs.create-release.outputs.version }}
+          ${{ matrix.cross && '/p:ObjCopyName=aarch64-linux-gnu-objcopy' || '' }}
+
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          cd src/Graft.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish
+          tar -czf "$GITHUB_WORKSPACE/graft-cli-v${{ needs.create-release.outputs.version }}-${{ matrix.rid }}.tar.gz" graft
+
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $publishDir = "src/Graft.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish"
+          Compress-Archive -Path "$publishDir/graft.exe" -DestinationPath "graft-cli-v${{ needs.create-release.outputs.version }}-${{ matrix.rid }}.zip"
+
+      - name: Upload asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "cli/v${{ needs.create-release.outputs.version }}" \
+            "graft-cli-v${{ needs.create-release.outputs.version }}-${{ matrix.rid }}.${{ matrix.archive }}"
+
+  publish-release:
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "cli/v${{ needs.create-release.outputs.version }}" \
+            --draft=false
