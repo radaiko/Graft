@@ -40,7 +40,7 @@ jobs:
 
       - name: Set version in package.json
         working-directory: src/Graft.VSCodeExtension
-        run: npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
+        run: npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
 
       - name: Copy LICENSE
         run: cp LICENSE src/Graft.VSCodeExtension/LICENSE
