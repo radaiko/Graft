@@ -11,7 +11,7 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ---
 
-## [Unreleased] -- Next
+## [0.2.1]
 
 ### Changed
 - **CLI:** `--force` now only overrides dirty checks, never skips confirmation prompts
