@@ -21,7 +21,7 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ### Fixed
 
-## v0.2.0 -- Initial public release
+## [0.2.0] -- Initial public release
 
 ### Added
 
