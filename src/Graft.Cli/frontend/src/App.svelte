@@ -1,7 +1,6 @@
 <script>
   import Stacks from './views/Stacks.svelte';
   import Worktrees from './views/Worktrees.svelte';
-  import Settings from './views/Settings.svelte';
 
   let activeView = $state('stacks');
   let toasts = $state([]);
@@ -26,7 +25,6 @@
   const navItems = [
     { id: 'stacks', label: 'Stacks', icon: 'S' },
     { id: 'worktrees', label: 'Worktrees', icon: 'W' },
-    { id: 'settings', label: 'Settings', icon: '⚙' },
   ];
 </script>
 
@@ -60,8 +58,6 @@
       <Stacks {onError} {onSuccess} />
     {:else if activeView === 'worktrees'}
       <Worktrees {onError} {onSuccess} />
-    {:else if activeView === 'settings'}
-      <Settings {onError} {onSuccess} />
     {/if}
   </main>
 

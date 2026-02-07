@@ -54,12 +54,6 @@ export const nukeWorktrees = (force = false) => request('POST', '/api/nuke/workt
 export const nukeStacks = (force = false) => request('POST', '/api/nuke/stacks', { force });
 export const nukeBranches = () => request('POST', '/api/nuke/branches');
 
-// Config endpoints
-export const getConfig = () => request('GET', '/api/config');
-export const putConfig = (config) => request('PUT', '/api/config', config);
-export const getWorktreeConfig = () => request('GET', '/api/config/worktree');
-export const putWorktreeConfig = (config) => request('PUT', '/api/config/worktree', config);
-
 // Git endpoints
 export const getGitStatus = () => request('GET', '/api/git/status');
 export const getBranches = () => request('GET', '/api/git/branches');

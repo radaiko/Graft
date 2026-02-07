@@ -206,21 +206,7 @@ public sealed class ApiServer : IDisposable
                     break;
                 }
 
-                // Config endpoints
-                case ["api", "config"] when method == "GET":
-                    await ConfigHandler.GetConfig(ctx, _repoPath);
-                    break;
-                case ["api", "config"] when method == "PUT":
-                    await ConfigHandler.PutConfig(ctx, _repoPath);
-                    break;
-                case ["api", "config", "worktree"] when method == "GET":
-                    await ConfigHandler.GetWorktreeConfig(ctx, _repoPath);
-                    break;
-                case ["api", "config", "worktree"] when method == "PUT":
-                    await ConfigHandler.PutWorktreeConfig(ctx, _repoPath);
-                    break;
-
-                // Git endpoints
+// Git endpoints
                 case ["api", "git", "status"] when method == "GET":
                     await GitHandler.GetStatus(ctx, _repoPath, ct);
                     break;
