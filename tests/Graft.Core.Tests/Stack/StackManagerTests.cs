@@ -3,6 +3,7 @@ using Graft.Core.Config;
 using Graft.Core.Git;
 using Graft.Core.Stack;
 using Graft.Core.Tests.Helpers;
+using Graft.Core.Worktree;
 
 namespace Graft.Core.Tests.Stack;
 
@@ -347,6 +348,109 @@ public sealed class StackManagerTests : IDisposable
         // Clean up the merge state
         await _git.RunAsync("merge", "--abort");
         StackManager.ClearOperationState(_repo.Path);
+    }
+
+    [Fact]
+    public async Task Sync_BranchWithWorktree_SyncsSuccessfully()
+    {
+        _repo.InitGraftDir();
+        var stack = await StackManager.InitAsync("test-stack", _repo.Path);
+
+        // Create branches: trunk -> branch1 -> branch2
+        await _git.RunAsync("checkout", "-b", "branch1");
+        _repo.CommitFile("file1.txt", "content1", "Add file1");
+        await _git.RunAsync("checkout", "-b", "branch2");
+        _repo.CommitFile("file2.txt", "content2", "Add file2");
+
+        // Register branches in stack
+        await _git.RunAsync("checkout", stack.Trunk);
+        await StackManager.PushAsync("branch1", _repo.Path);
+        await StackManager.PushAsync("branch2", _repo.Path);
+
+        // Create a worktree for branch1 (the branch that would fail on checkout)
+        await _git.RunAsync("checkout", stack.Trunk);
+        await WorktreeManager.AddAsync("branch1", _repo.Path);
+
+        // Add a trunk commit so branches need syncing
+        _repo.CommitFile("trunk-file.txt", "trunk content", "Trunk commit");
+
+        var result = await StackManager.SyncAsync(_repo.Path);
+
+        Assert.False(result.HasConflict);
+        Assert.True(result.BranchResults.Count >= 2);
+        Assert.True(result.BranchResults.All(b =>
+            b.Status == SyncStatus.Merged || b.Status == SyncStatus.UpToDate));
+    }
+
+    [Fact]
+    public async Task Sync_MultipleBranchesWithWorktrees_SyncsSuccessfully()
+    {
+        _repo.InitGraftDir();
+        var stack = await StackManager.InitAsync("test-stack", _repo.Path);
+
+        // Create branches: trunk -> branch1 -> branch2 -> branch3
+        await _git.RunAsync("checkout", "-b", "branch1");
+        _repo.CommitFile("file1.txt", "content1", "Add file1");
+        await _git.RunAsync("checkout", "-b", "branch2");
+        _repo.CommitFile("file2.txt", "content2", "Add file2");
+        await _git.RunAsync("checkout", "-b", "branch3");
+        _repo.CommitFile("file3.txt", "content3", "Add file3");
+
+        // Register branches in stack
+        await _git.RunAsync("checkout", stack.Trunk);
+        await StackManager.PushAsync("branch1", _repo.Path);
+        await StackManager.PushAsync("branch2", _repo.Path);
+        await StackManager.PushAsync("branch3", _repo.Path);
+
+        // Create worktrees for branch1 and branch3
+        await _git.RunAsync("checkout", stack.Trunk);
+        await WorktreeManager.AddAsync("branch1", _repo.Path);
+        await WorktreeManager.AddAsync("branch3", _repo.Path);
+
+        // Add a trunk commit so branches need syncing
+        _repo.CommitFile("trunk-file.txt", "trunk content", "Trunk commit");
+
+        var result = await StackManager.SyncAsync(_repo.Path);
+
+        Assert.False(result.HasConflict);
+        Assert.Equal(3, result.BranchResults.Count);
+        Assert.True(result.BranchResults.All(b =>
+            b.Status == SyncStatus.Merged || b.Status == SyncStatus.UpToDate));
+    }
+
+    [Fact]
+    public async Task Sync_ConflictInWorktreeBranch_SavesWorktreePath()
+    {
+        _repo.InitGraftDir();
+        var stack = await StackManager.InitAsync("test-stack", _repo.Path);
+
+        // Create a branch with a conflicting file
+        await _git.RunAsync("checkout", "-b", "conflict-branch");
+        _repo.CommitFile("shared.txt", "branch version", "Branch change");
+
+        // Register branch and return to trunk
+        await _git.RunAsync("checkout", stack.Trunk);
+        await StackManager.PushAsync("conflict-branch", _repo.Path);
+
+        // Create a worktree for the conflict branch
+        await _git.RunAsync("checkout", stack.Trunk);
+        await WorktreeManager.AddAsync("conflict-branch", _repo.Path);
+
+        // Create a conflicting trunk commit
+        _repo.CommitFile("shared.txt", "trunk version", "Trunk change");
+
+        var result = await StackManager.SyncAsync(_repo.Path);
+
+        Assert.True(result.HasConflict);
+        Assert.Contains(result.BranchResults, b => b.Status == SyncStatus.Conflict);
+
+        // Verify operation state saved the worktree path
+        var opState = StackManager.LoadOperationState(_repo.Path);
+        Assert.NotNull(opState);
+        Assert.NotNull(opState.WorktreePath);
+
+        // Clean up: abort the merge in the worktree
+        await StackManager.AbortSyncAsync(_repo.Path);
     }
 
     // ========================

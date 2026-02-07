@@ -1,5 +1,6 @@
 using Graft.Core.Config;
 using Graft.Core.Git;
+using Graft.Core.Worktree;
 
 namespace Graft.Core.Stack;
 
@@ -199,6 +200,9 @@ public static class StackManager
         // Track branches that were merged (for pushing)
         var mergedBranches = new List<string>();
 
+        // Detect branches checked out in worktrees (merge there instead of checking out)
+        var worktreeByBranch = await GetWorktreeBranchMapAsync(repoPath, ct);
+
         string parentBranch = startIdx > 0 ? stack.Branches[startIdx - 1].Name : stack.Trunk;
 
         foreach (var branch in branchesToSync)
@@ -226,8 +230,22 @@ public static class StackManager
             }
             else
             {
-                (await git.RunAsync("checkout", branch.Name)).ThrowOnFailure();
-                var mergeResult = await git.RunAsync("merge", parentBranch, "--no-edit");
+                // If the branch is checked out in a worktree, merge there
+                // instead of checking out in the current working tree
+                GitRunner mergeGit;
+                string? branchWtPath = null;
+                if (worktreeByBranch.TryGetValue(branch.Name, out var wtPath))
+                {
+                    mergeGit = new GitRunner(wtPath, ct);
+                    branchWtPath = wtPath;
+                }
+                else
+                {
+                    (await git.RunAsync("checkout", branch.Name)).ThrowOnFailure();
+                    mergeGit = git;
+                }
+
+                var mergeResult = await mergeGit.RunAsync("merge", parentBranch, "--no-edit");
 
                 if (mergeResult.Success)
                 {
@@ -240,7 +258,7 @@ public static class StackManager
                 else
                 {
                     branchResult.Status = SyncStatus.Conflict;
-                    var diffResult = await git.RunAsync("diff", "--name-only", "--diff-filter=U");
+                    var diffResult = await mergeGit.RunAsync("diff", "--name-only", "--diff-filter=U");
                     if (diffResult.Success && !string.IsNullOrWhiteSpace(diffResult.Stdout))
                     {
                         branchResult.ConflictingFiles = diffResult.Stdout
@@ -251,7 +269,7 @@ public static class StackManager
 
                     var branchIdx = stack.Branches.FindIndex(b => b.Name == branch.Name);
                     int? syncUpTo = branchName != null ? branchIdx : null;
-                    SaveOperationState(repoPath, stackName, branchIdx, originalBranch, syncUpTo);
+                    SaveOperationState(repoPath, stackName, branchIdx, originalBranch, syncUpTo, branchWtPath);
 
                     result.BranchResults.Add(branchResult);
                     result.HasConflict = true;
@@ -304,8 +322,22 @@ public static class StackManager
         var stack = ConfigLoader.LoadStack(opState.StackName, repoPath);
         var result = new SyncResult { Trunk = stack.Trunk };
 
-        // Finish the current merge
-        var mergeResult = await git.RunAsync("merge", "--continue");
+        // Finish the current merge (may be in a worktree)
+        GitRunner continueGit;
+        if (opState.WorktreePath != null)
+        {
+            if (!Directory.Exists(opState.WorktreePath))
+                throw new InvalidOperationException(
+                    $"The worktree at '{opState.WorktreePath}' no longer exists.\n" +
+                    "Run 'graft --abort' to clean up, then try the sync again.");
+            continueGit = new GitRunner(opState.WorktreePath, ct);
+        }
+        else
+        {
+            continueGit = git;
+        }
+
+        var mergeResult = await continueGit.RunAsync("merge", "--continue");
         if (!mergeResult.Success)
         {
             // Still has conflicts — get the conflicting files
@@ -315,7 +347,7 @@ public static class StackManager
                 Status = SyncStatus.Conflict,
             };
 
-            var diffResult = await git.RunAsync("diff", "--name-only", "--diff-filter=U");
+            var diffResult = await continueGit.RunAsync("diff", "--name-only", "--diff-filter=U");
             if (diffResult.Success && !string.IsNullOrWhiteSpace(diffResult.Stdout))
             {
                 conflictBranch.ConflictingFiles = diffResult.Stdout
@@ -346,14 +378,29 @@ public static class StackManager
             ? opState.SyncUpToIndex.Value + 1
             : stack.Branches.Count;
 
+        // Detect worktrees for cascade
+        var worktreeByBranch = await GetWorktreeBranchMapAsync(repoPath, ct);
+
         string parentBranch = stack.Branches[opState.BranchIndex].Name;
         for (int i = opState.BranchIndex + 1; i < endIdx; i++)
         {
             var branch = stack.Branches[i];
             var branchResult = new BranchSyncResult { Name = branch.Name };
 
-            (await git.RunAsync("checkout", branch.Name)).ThrowOnFailure();
-            var cascadeMerge = await git.RunAsync("merge", parentBranch, "--no-edit");
+            GitRunner branchGit;
+            string? branchWtPath = null;
+            if (worktreeByBranch.TryGetValue(branch.Name, out var cascadeWtPath))
+            {
+                branchGit = new GitRunner(cascadeWtPath, ct);
+                branchWtPath = cascadeWtPath;
+            }
+            else
+            {
+                (await git.RunAsync("checkout", branch.Name)).ThrowOnFailure();
+                branchGit = git;
+            }
+
+            var cascadeMerge = await branchGit.RunAsync("merge", parentBranch, "--no-edit");
 
             if (cascadeMerge.Success)
             {
@@ -366,7 +413,7 @@ public static class StackManager
             else
             {
                 branchResult.Status = SyncStatus.Conflict;
-                var diffResult = await git.RunAsync("diff", "--name-only", "--diff-filter=U");
+                var diffResult = await branchGit.RunAsync("diff", "--name-only", "--diff-filter=U");
                 if (diffResult.Success && !string.IsNullOrWhiteSpace(diffResult.Stdout))
                 {
                     branchResult.ConflictingFiles = diffResult.Stdout
@@ -375,7 +422,7 @@ public static class StackManager
                         .ToList();
                 }
 
-                SaveOperationState(repoPath, opState.StackName, i, opState.OriginalBranch, opState.SyncUpToIndex);
+                SaveOperationState(repoPath, opState.StackName, i, opState.OriginalBranch, opState.SyncUpToIndex, branchWtPath);
                 result.BranchResults.Add(branchResult);
                 result.HasConflict = true;
                 return result;
@@ -409,15 +456,23 @@ public static class StackManager
     public static async Task AbortSyncAsync(string repoPath, CancellationToken ct = default)
     {
         var git = new GitRunner(repoPath, ct);
+        var opState = LoadOperationState(repoPath);
 
-        // Abort any in-progress merge
-        var gitDir = GitRunner.ResolveGitDir(repoPath);
-        if (File.Exists(Path.Combine(gitDir, "MERGE_HEAD")))
+        // Abort any in-progress merge (may be in a worktree)
+        if (opState?.WorktreePath != null && Directory.Exists(opState.WorktreePath))
         {
-            await git.RunAsync("merge", "--abort");
+            var wtGit = new GitRunner(opState.WorktreePath, ct);
+            var wtGitDir = GitRunner.ResolveGitDir(opState.WorktreePath);
+            if (File.Exists(Path.Combine(wtGitDir, "MERGE_HEAD")))
+                await wtGit.RunAsync("merge", "--abort");
+        }
+        else
+        {
+            var gitDir = GitRunner.ResolveGitDir(repoPath);
+            if (File.Exists(Path.Combine(gitDir, "MERGE_HEAD")))
+                await git.RunAsync("merge", "--abort");
         }
 
-        var opState = LoadOperationState(repoPath);
         if (opState != null)
         {
             var checkoutResult = await git.RunAsync("checkout", opState.OriginalBranch);
@@ -428,13 +483,25 @@ public static class StackManager
         }
     }
 
+    private static async Task<Dictionary<string, string>> GetWorktreeBranchMapAsync(string repoPath, CancellationToken ct)
+    {
+        var worktrees = await WorktreeManager.ListAsync(repoPath, ct);
+        var map = new Dictionary<string, string>();
+        foreach (var wt in worktrees)
+        {
+            if (wt.Branch != null)
+                map[wt.Branch] = wt.Path;
+        }
+        return map;
+    }
+
     private static string GetOperationStatePath(string repoPath)
     {
         var commonDir = GitRunner.ResolveGitCommonDir(repoPath);
         return Path.Combine(commonDir, "graft", "operation.toml");
     }
 
-    private static void SaveOperationState(string repoPath, string stackName, int branchIndex, string originalBranch, int? syncUpToIndex = null)
+    private static void SaveOperationState(string repoPath, string stackName, int branchIndex, string originalBranch, int? syncUpToIndex = null, string? worktreePath = null)
     {
         var path = GetOperationStatePath(repoPath);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -447,6 +514,8 @@ public static class StackManager
         };
         if (syncUpToIndex.HasValue)
             table["sync_up_to_index"] = (long)syncUpToIndex.Value;
+        if (worktreePath != null)
+            table["worktree_path"] = worktreePath;
         var tempPath = $"{path}.tmp.{Guid.NewGuid():N}";
         File.WriteAllText(tempPath, Tomlyn.Toml.FromModel(table), System.Text.Encoding.UTF8);
         File.Move(tempPath, path, overwrite: true);
@@ -469,6 +538,7 @@ public static class StackManager
                 OriginalBranch = (string)table["original_branch"],
                 Operation = (string)table["operation"],
                 SyncUpToIndex = table.TryGetValue("sync_up_to_index", out var syncUpTo) ? (int)(long)syncUpTo : null,
+                WorktreePath = table.TryGetValue("worktree_path", out var wtPath) ? (string)wtPath : null,
             };
         }
         catch (Exception ex) when (ex is KeyNotFoundException or InvalidCastException or Tomlyn.TomlException)
@@ -554,4 +624,9 @@ public sealed class OperationState
     /// If null, sync continues to the end of the stack.
     /// </summary>
     public int? SyncUpToIndex { get; set; }
+    /// <summary>
+    /// If set, the conflicted branch is checked out in this worktree path.
+    /// Merge continue/abort should be performed there instead of the main repo.
+    /// </summary>
+    public string? WorktreePath { get; set; }
 }
