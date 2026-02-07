@@ -4,7 +4,6 @@ using Tomlyn;
 using Tomlyn.Model;
 using Graft.Core.Git;
 using Graft.Core.Stack;
-using Graft.Core.Worktree;
 
 namespace Graft.Core.Config;
 
@@ -55,26 +54,6 @@ public static class ConfigLoader
         var tempPath = $"{path}.tmp.{Guid.NewGuid():N}";
         File.WriteAllText(tempPath, name, Encoding.UTF8);
         File.Move(tempPath, path, overwrite: true);
-    }
-
-    public static GraftConfig LoadRepoConfig(string repoPath)
-    {
-        var configPath = Path.Combine(GetGraftDir(repoPath), "config.toml");
-        if (!File.Exists(configPath))
-            return new GraftConfig();
-
-        var toml = File.ReadAllText(configPath, Encoding.UTF8);
-        var table = Toml.ToModel(toml);
-
-        var config = new GraftConfig();
-        if (table.TryGetValue("defaults", out var defaultsObj) && defaultsObj is TomlTable defaults)
-        {
-            if (defaults.TryGetValue("trunk", out var trunk) && trunk is string trunkStr)
-                config.Defaults.Trunk = trunkStr;
-            if (defaults.TryGetValue("stack_pr_strategy", out var strategy) && strategy is string strategyStr)
-                config.Defaults.StackPrStrategy = strategyStr;
-        }
-        return config;
     }
 
     public static StackDefinition LoadStack(string name, string repoPath)
@@ -226,102 +205,6 @@ public static class ConfigLoader
             .Select(f => Path.GetFileNameWithoutExtension(f))
             .OrderBy(n => n)
             .ToArray();
-    }
-
-    public static WorktreeConfig LoadWorktreeConfig(string repoPath)
-    {
-        var wtPath = Path.Combine(GetGraftDir(repoPath), "worktrees.toml");
-        if (!File.Exists(wtPath))
-            return new WorktreeConfig();
-
-        var toml = File.ReadAllText(wtPath, Encoding.UTF8);
-        var table = Toml.ToModel(toml);
-
-        var config = new WorktreeConfig();
-        if (table.TryGetValue("layout", out var layoutObj) && layoutObj is TomlTable layout)
-        {
-            if (layout.TryGetValue("pattern", out var pattern) && pattern is string patternStr)
-                config.Layout.Pattern = patternStr;
-        }
-
-        if (table.TryGetValue("templates", out var templatesObj) && templatesObj is TomlTable templates)
-        {
-            if (templates.TryGetValue("files", out var filesObj) && filesObj is TomlTableArray files)
-            {
-                foreach (TomlTable fileTable in files)
-                {
-                    if (fileTable["src"] is not string src || fileTable["dst"] is not string dst)
-                        continue;
-
-                    var tf = new TemplateFile { Src = src, Dst = dst };
-                    if (fileTable.TryGetValue("mode", out var mode) && mode is string modeStr)
-                    {
-                        tf.Mode = modeStr switch
-                        {
-                            "symlink" => TemplateMode.Symlink,
-                            _ => TemplateMode.Copy,
-                        };
-                    }
-                    config.Templates.Files.Add(tf);
-                }
-            }
-        }
-
-        return config;
-    }
-
-    public static void SaveRepoConfig(GraftConfig config, string repoPath)
-    {
-        if (!string.IsNullOrWhiteSpace(config.Defaults.Trunk))
-            Validation.ValidateName(config.Defaults.Trunk, "Trunk branch");
-
-        var graftDir = GetGraftDir(repoPath);
-        Directory.CreateDirectory(graftDir);
-        var configPath = Path.Combine(graftDir, "config.toml");
-
-        var defaults = new TomlTable
-        {
-            ["trunk"] = config.Defaults.Trunk,
-            ["stack_pr_strategy"] = config.Defaults.StackPrStrategy,
-        };
-        var table = new TomlTable { ["defaults"] = defaults };
-
-        var tempPath = $"{configPath}.tmp.{Guid.NewGuid():N}";
-        File.WriteAllText(tempPath, Toml.FromModel(table), Encoding.UTF8);
-        File.Move(tempPath, configPath, overwrite: true);
-    }
-
-    public static void SaveWorktreeConfig(WorktreeConfig config, string repoPath)
-    {
-        if (!string.IsNullOrEmpty(config.Layout.Pattern) && !config.Layout.Pattern.Contains("{name}"))
-            throw new ArgumentException("Layout pattern must include '{name}'");
-
-        var graftDir = GetGraftDir(repoPath);
-        Directory.CreateDirectory(graftDir);
-        var wtPath = Path.Combine(graftDir, "worktrees.toml");
-
-        var layout = new TomlTable { ["pattern"] = config.Layout.Pattern };
-        var table = new TomlTable { ["layout"] = layout };
-
-        if (config.Templates.Files.Count > 0)
-        {
-            var files = new TomlTableArray();
-            foreach (var ft in config.Templates.Files.Select(tf => new TomlTable
-            {
-                ["src"] = tf.Src,
-                ["dst"] = tf.Dst,
-                ["mode"] = tf.Mode.ToString().ToLowerInvariant(),
-            }))
-            {
-                files.Add(ft);
-            }
-            var templates = new TomlTable { ["files"] = files };
-            table["templates"] = templates;
-        }
-
-        var tempPath = $"{wtPath}.tmp.{Guid.NewGuid():N}";
-        File.WriteAllText(tempPath, Toml.FromModel(table), Encoding.UTF8);
-        File.Move(tempPath, wtPath, overwrite: true);
     }
 
     public static UpdateState LoadUpdateState(string configDir)

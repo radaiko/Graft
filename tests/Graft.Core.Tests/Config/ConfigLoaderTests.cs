@@ -13,37 +13,6 @@ public sealed class ConfigLoaderTests : IDisposable
 
     public void Dispose() => _repo.Dispose();
 
-    // Requirement: Per-repo config at .git/graft/config.toml
-    [Fact]
-    public void LoadRepoConfig_NoFile_ShouldReturnDefaults()
-    {
-        _repo.InitGraftDir();
-        var configPath = Path.Combine(_repo.Path, ".git", "graft", "config.toml");
-        Assert.False(File.Exists(configPath));
-
-        var config = ConfigLoader.LoadRepoConfig(_repo.Path);
-        Assert.Equal("main", config.Defaults.Trunk);
-        Assert.Equal("chain", config.Defaults.StackPrStrategy);
-    }
-
-    // Requirement: Per-repo config can be loaded from file
-    [Fact]
-    public void LoadRepoConfig_ValidToml_ShouldReturnParsedConfig()
-    {
-        _repo.InitGraftDir();
-        var configPath = Path.Combine(_repo.Path, ".git", "graft", "config.toml");
-        File.WriteAllText(configPath, """
-            [defaults]
-            trunk = "develop"
-            stack_pr_strategy = "individual"
-            """);
-        Assert.True(File.Exists(configPath));
-
-        var config = ConfigLoader.LoadRepoConfig(_repo.Path);
-        Assert.Equal("develop", config.Defaults.Trunk);
-        Assert.Equal("individual", config.Defaults.StackPrStrategy);
-    }
-
     // Requirement: Stack definitions stored in .git/graft/stacks/<name>.toml
     [Fact]
     public void LoadStack_ValidToml_ShouldReturnStackDefinition()
@@ -146,28 +115,6 @@ public sealed class ConfigLoaderTests : IDisposable
         Assert.False(File.Exists(stackPath));
 
         Assert.ThrowsAny<Exception>(() => ConfigLoader.LoadStack("nonexistent", _repo.Path));
-    }
-
-    // Requirement: Worktree config at .git/graft/worktrees.toml
-    [Fact]
-    public void LoadWorktreeConfig_ValidToml_ShouldReturnConfig()
-    {
-        _repo.InitGraftDir();
-        var wtPath = Path.Combine(_repo.Path, ".git", "graft", "worktrees.toml");
-        File.WriteAllText(wtPath, """
-            [layout]
-            pattern = "../{name}"
-
-            [templates]
-            [[templates.files]]
-            src = ".env.template"
-            dst = ".env"
-            mode = "copy"
-            """);
-        Assert.True(File.Exists(wtPath));
-
-        var config = ConfigLoader.LoadWorktreeConfig(_repo.Path);
-        Assert.Equal("../{name}", config.Layout.Pattern);
     }
 
     // Requirement: Update state at ~/.config/graft/update-state.toml

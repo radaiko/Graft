@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Graft.Core.Config;
 using Graft.Core.Commit;
 using Graft.Core.Nuke;
 using Graft.Core.Stack;
@@ -13,7 +12,7 @@ namespace Graft.Cli.Json;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     Converters = [typeof(JsonStringEnumConverter<SyncStatus>),
                   typeof(JsonStringEnumConverter<PrState>),
-                  typeof(JsonStringEnumConverter<TemplateMode>)]
+]
 )]
 [JsonSerializable(typeof(string[]))]
 [JsonSerializable(typeof(List<string>))]
@@ -34,8 +33,6 @@ namespace Graft.Cli.Json;
 [JsonSerializable(typeof(CommitResult))]
 [JsonSerializable(typeof(NukeResult))]
 [JsonSerializable(typeof(List<WorktreeInfo>))]
-[JsonSerializable(typeof(GraftConfig))]
-[JsonSerializable(typeof(WorktreeConfig))]
 public partial class GraftJsonContext : JsonSerializerContext
 {
 }
