@@ -69,15 +69,12 @@ public static class WorktreeCommand
             var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
 
-            if (!force)
+            Console.Write($"Remove worktree for '{branch}'? [y/N] ");
+            var response = Console.ReadLine();
+            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
             {
-                Console.Write($"Remove worktree for '{branch}'? [y/N] ");
-                var response = Console.ReadLine();
-                if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
-                {
-                    Console.WriteLine("Aborted.");
-                    return;
-                }
+                Console.WriteLine("Aborted.");
+                return;
             }
 
             try

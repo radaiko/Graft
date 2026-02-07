@@ -447,16 +447,12 @@ public static class StackCommand
     private static Command CreateDelCommand()
     {
         var nameArg = new Argument<string>("name") { Description = "Name of the stack to delete" };
-        var forceOption = new Option<bool>("--force") { Description = "Override dirty checks" };
-        forceOption.Aliases.Add("-f");
         var command = new Command("del", "Delete a stack. Branches are kept.");
         command.Add(nameArg);
-        command.Add(forceOption);
 
         command.SetAction((parseResult) =>
         {
             var name = parseResult.GetValue(nameArg)!;
-            var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
 
             // Validate stack exists before prompting
