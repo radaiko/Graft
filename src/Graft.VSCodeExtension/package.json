@@ -1,0 +1,194 @@
+{
+  "name": "graft-vscode",
+  "displayName": "Graft",
+  "description": "Visual stack management for Graft — stacked branches and git worktrees",
+  "version": "0.1.0",
+  "publisher": "radaiko",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers"
+  ],
+  "activationEvents": [
+    "workspaceContains:.git/graft",
+    "onCommand:graft.stackInit"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "graft",
+          "title": "Graft",
+          "icon": "media/graft-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "graft": [
+        {
+          "id": "graftStacks",
+          "name": "Stacks"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "graft.refresh",
+        "title": "Refresh",
+        "category": "Graft",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "graft.stackInit",
+        "title": "Init Stack",
+        "category": "Graft",
+        "icon": "$(add)"
+      },
+      {
+        "command": "graft.stackSwitch",
+        "title": "Switch Stack",
+        "category": "Graft"
+      },
+      {
+        "command": "graft.stackPush",
+        "title": "Push Branch",
+        "category": "Graft"
+      },
+      {
+        "command": "graft.stackPop",
+        "title": "Pop Branch",
+        "category": "Graft"
+      },
+      {
+        "command": "graft.stackDrop",
+        "title": "Drop Branch",
+        "category": "Graft"
+      },
+      {
+        "command": "graft.stackSync",
+        "title": "Sync Stack",
+        "category": "Graft",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "graft.stackCommit",
+        "title": "Commit to Stack",
+        "category": "Graft"
+      },
+      {
+        "command": "graft.stackDel",
+        "title": "Delete Stack",
+        "category": "Graft"
+      },
+      {
+        "command": "graft.continue",
+        "title": "Continue",
+        "category": "Graft"
+      },
+      {
+        "command": "graft.abort",
+        "title": "Abort",
+        "category": "Graft"
+      },
+      {
+        "command": "graft.checkoutBranch",
+        "title": "Checkout Branch",
+        "category": "Graft"
+      },
+      {
+        "command": "graft.openPr",
+        "title": "Open Pull Request",
+        "category": "Graft",
+        "icon": "$(link-external)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "graft.refresh",
+          "when": "view == graftStacks",
+          "group": "navigation"
+        },
+        {
+          "command": "graft.stackInit",
+          "when": "view == graftStacks",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "graft.stackSwitch",
+          "when": "view == graftStacks && viewItem == graft.stack.inactive",
+          "group": "inline"
+        },
+        {
+          "command": "graft.stackPush",
+          "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
+          "group": "1_stack@1"
+        },
+        {
+          "command": "graft.stackPop",
+          "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
+          "group": "1_stack@2"
+        },
+        {
+          "command": "graft.stackSync",
+          "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
+          "group": "1_stack@3"
+        },
+        {
+          "command": "graft.stackCommit",
+          "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
+          "group": "1_stack@4"
+        },
+        {
+          "command": "graft.stackDel",
+          "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
+          "group": "2_danger@1"
+        },
+        {
+          "command": "graft.stackDrop",
+          "when": "view == graftStacks && viewItem =~ /^graft\\.branch/",
+          "group": "1_branch@1"
+        },
+        {
+          "command": "graft.checkoutBranch",
+          "when": "view == graftStacks && viewItem =~ /^graft\\.branch/",
+          "group": "inline"
+        },
+        {
+          "command": "graft.openPr",
+          "when": "view == graftStacks && viewItem == graft.branch.withPr",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Graft",
+      "properties": {
+        "graft.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the graft CLI binary. Leave empty to find automatically."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "smol-toml": "^1.3.0"
+  }
+}

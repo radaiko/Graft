@@ -13,6 +13,12 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 ## [Unreleased] -- Next
 
 ### Added
+- **VS Code Extension:** Activity bar with tree view showing all stacks, trunk, and branches with sync status icons
+- **VS Code Extension:** 13 command palette commands -- init, switch, push, pop, drop, sync, commit, delete, continue, abort, checkout, open PR, refresh
+- **VS Code Extension:** Status bar showing active stack name and sync status (synced/stale/conflict)
+- **VS Code Extension:** File watcher on `.git/graft/` with 300ms debounce for automatic tree refresh
+- **VS Code Extension:** Context menus on stacks (push, pop, sync, commit, delete) and branches (drop, checkout, open PR)
+- **VS Code Extension:** `graft.cliPath` setting for custom CLI binary location
 
 ### Changed
 
