@@ -13,5 +13,5 @@ Release notes for each Graft product. Download binaries from the [GitHub Release
 |---------|--------|-----------|
 | CLI | 0.2.0 | [View](changelog/cli) |
 | VS Code Extension | 0.1.0 | [View](changelog/vscode) |
-| Visual Studio 2026 | -- | [View](changelog/vs) |
+| Visual Studio | -- | [View](changelog/vs) |
 | JetBrains Plugin | -- | [View](changelog/jetbrains) |

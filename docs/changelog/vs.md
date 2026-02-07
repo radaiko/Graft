@@ -1,11 +1,11 @@
 ---
 layout: default
-title: Visual Studio 2026
+title: Visual Studio
 parent: Changelog
 nav_order: 3
 ---
 
-# Visual Studio 2026 Extension Changelog
+# Visual Studio Extension Changelog
 
 ---
 
