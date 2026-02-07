@@ -266,6 +266,13 @@ export function registerCommands(
       branchName = args[0];
     } else if (args[0] instanceof BranchItem) {
       branchName = args[0].branch.name;
+    } else {
+      branchName = await vscode.window.showInputBox({
+        prompt: "Branch name to checkout",
+        validateInput: (v) =>
+          v.trim() ? null : "Branch name is required",
+      });
+      if (branchName) branchName = branchName.trim();
     }
     if (!branchName) return;
 

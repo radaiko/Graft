@@ -36,11 +36,12 @@ export class GraftCli {
     const cmd = process.platform === "win32" ? "where" : "which";
     return new Promise((resolve) => {
       execFile(cmd, [name], (error, stdout) => {
-        if (error || !stdout.trim()) {
+        const out = (stdout ?? "").trim();
+        if (error || !out) {
           resolve(null);
         } else {
           // On Windows, 'where' may return multiple paths (one per line)
-          resolve(stdout.trim().split(/\r?\n/)[0]);
+          resolve(out.split(/\r?\n/)[0]);
         }
       });
     });
@@ -120,7 +121,7 @@ export class GraftCli {
   async checkoutBranch(branch: string, cwd: string): Promise<void> {
     const gitPath = vscode.workspace.getConfiguration("git").get<string>("path") || "git";
     return new Promise((resolve, reject) => {
-      execFile(gitPath, ["checkout", branch], { cwd }, (error, _stdout, stderr) => {
+      execFile(gitPath, ["checkout", branch], { cwd, timeout: 30_000 }, (error, _stdout, stderr) => {
         if (error) {
           reject(new Error((stderr ?? "").trim() || error.message));
         } else {
