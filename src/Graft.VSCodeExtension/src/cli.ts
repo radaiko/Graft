@@ -28,6 +28,10 @@ export class GraftCli {
     );
   }
 
+  resetBinaryPath(): void {
+    this.binaryPath = null;
+  }
+
   private which(name: string): Promise<string | null> {
     const cmd = process.platform === "win32" ? "where" : "which";
     return new Promise((resolve) => {
@@ -53,10 +57,10 @@ export class GraftCli {
         { cwd, timeout: 60_000 },
         (error, stdout, stderr) => {
           if (error) {
-            const msg = stderr.trim() || stdout.trim() || error.message;
+            const msg = (stderr ?? "").trim() || (stdout ?? "").trim() || error.message;
             reject(new Error(msg));
           } else {
-            resolve(stdout.trimEnd());
+            resolve((stdout ?? "").trimEnd());
           }
         }
       );
@@ -114,11 +118,11 @@ export class GraftCli {
   }
 
   async checkoutBranch(branch: string, cwd: string): Promise<void> {
-    // Use git directly for checkout — faster and no need for graft CLI
+    const gitPath = vscode.workspace.getConfiguration("git").get<string>("path") || "git";
     return new Promise((resolve, reject) => {
-      execFile("git", ["checkout", branch], { cwd }, (error, _stdout, stderr) => {
+      execFile(gitPath, ["checkout", branch], { cwd }, (error, _stdout, stderr) => {
         if (error) {
-          reject(new Error(stderr.trim() || error.message));
+          reject(new Error((stderr ?? "").trim() || error.message));
         } else {
           resolve();
         }

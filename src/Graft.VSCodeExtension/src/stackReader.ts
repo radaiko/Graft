@@ -1,5 +1,6 @@
-import { readFile, readdir, access } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import * as path from "node:path";
+import { parse } from "smol-toml";
 import { parseStackToml } from "./toml.js";
 import {
   resolveGitCommonDir,
@@ -37,11 +38,12 @@ export class StackReader {
       this.listStackFiles(stacksDir),
     ]);
 
-    const stacks = await Promise.all(
+    const results = await Promise.all(
       stackNames.map((name) =>
-        this.readStack(name, stacksDir, activeStack, currentBranch)
+        this.readStack(name, stacksDir, activeStack, currentBranch).catch(() => null)
       )
     );
+    const stacks = results.filter((s): s is StackDisplayInfo => s !== null);
 
     return { stacks, activeStack, currentBranch };
   }
@@ -148,9 +150,9 @@ export class StackReader {
     try {
       const graftDir = await this.getGraftDir();
       const opPath = path.join(graftDir, "operation.toml");
-      await access(opPath);
       const content = await readFile(opPath, "utf-8");
-      return content.includes(stackName);
+      const table = parse(content);
+      return table["stack"] === stackName;
     } catch {
       return false;
     }

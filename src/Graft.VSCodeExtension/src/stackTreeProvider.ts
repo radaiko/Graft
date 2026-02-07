@@ -41,7 +41,8 @@ export class StackTreeProvider
     if (!this.state) {
       try {
         this.state = await this.reader.readState();
-      } catch {
+      } catch (err) {
+        console.error("[Graft] Failed to read stack state:", err);
         this.state = { stacks: [], activeStack: null, currentBranch: "" };
       }
     }

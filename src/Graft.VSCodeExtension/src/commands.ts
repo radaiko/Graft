@@ -54,16 +54,22 @@ export function registerCommands(
     if (args[0] instanceof StackItem) {
       name = args[0].stack.name;
     } else {
-      // Called from command palette — show picker
+      // Called from command palette — prefer tree state if available, fall back to input
       const state = treeProvider.getState();
       const stacks = state?.stacks.map((s) => s.name) ?? [];
-      if (stacks.length === 0) {
-        vscode.window.showWarningMessage("No stacks to switch to.");
-        return;
+      if (stacks.length > 0) {
+        name = await vscode.window.showQuickPick(stacks, {
+          placeHolder: "Select stack to switch to",
+        });
+      } else {
+        name = await vscode.window.showInputBox({
+          prompt: "Stack name to switch to",
+          placeHolder: "my-feature",
+          validateInput: (v) =>
+            v.trim() ? null : "Stack name is required",
+        });
+        if (name) name = name.trim();
       }
-      name = await vscode.window.showQuickPick(stacks, {
-        placeHolder: "Select stack to switch to",
-      });
     }
     if (!name) return;
 
@@ -156,6 +162,9 @@ export function registerCommands(
       vscode.window.showInformationMessage("Stack synced.");
     } catch (e) {
       const msg = errorMessage(e);
+      // TODO: CLI doesn't expose structured error codes yet — this string
+      // match is coupled to the CLI's error wording and should be replaced
+      // with exit code or machine-readable payload when available.
       if (msg.toLowerCase().includes("conflict")) {
         const action = await vscode.window.showWarningMessage(
           `Sync conflict: ${msg}`,
@@ -271,7 +280,14 @@ export function registerCommands(
   reg("graft.openPr", async (...args: unknown[]) => {
     if (args[0] instanceof BranchItem && args[0].branch.pr) {
       const url = args[0].branch.pr.url;
-      vscode.env.openExternal(vscode.Uri.parse(url));
+      const uri = vscode.Uri.parse(url);
+      if (uri.scheme === "http" || uri.scheme === "https") {
+        vscode.env.openExternal(uri);
+      } else {
+        vscode.window.showErrorMessage(
+          `Cannot open PR URL '${url}': only http/https URLs are allowed.`
+        );
+      }
     }
   });
 }

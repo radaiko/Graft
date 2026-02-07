@@ -19,8 +19,8 @@ export async function runGit(
         : 0;
       resolve({
         exitCode,
-        stdout: stdout.trimEnd(),
-        stderr: stderr.trimEnd(),
+        stdout: (stdout ?? "").trimEnd(),
+        stderr: (stderr ?? "").trimEnd(),
       });
     });
   });
@@ -66,6 +66,39 @@ export async function resolveGitCommonDir(workingDir: string): Promise<string> {
     }
   } catch {
     // Not a file either
+  }
+
+  throw new Error(`'${workingDir}' is not a git repository`);
+}
+
+/**
+ * Port of GitRunner.ResolveGitDir from C#.
+ * Returns the per-worktree git dir (not the shared common dir).
+ * For regular repos this is the same as resolveGitCommonDir.
+ */
+export async function resolveGitDir(workingDir: string): Promise<string> {
+  const dotGit = path.join(workingDir, ".git");
+
+  try {
+    const s = await stat(dotGit);
+    if (s.isDirectory()) {
+      return dotGit;
+    }
+  } catch {
+    // Not a directory
+  }
+
+  try {
+    const content = (await readFile(dotGit, "utf-8")).trim();
+    if (content.startsWith("gitdir: ")) {
+      let gitDir = content.slice("gitdir: ".length);
+      if (!path.isAbsolute(gitDir)) {
+        gitDir = path.resolve(workingDir, gitDir);
+      }
+      return gitDir;
+    }
+  } catch {
+    // Not a file
   }
 
   throw new Error(`'${workingDir}' is not a git repository`);

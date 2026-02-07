@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import * as vscode from "vscode";
 import { GraftCli } from "./cli.js";
 import { StackReader } from "./stackReader.js";
@@ -5,7 +6,7 @@ import { StackTreeProvider } from "./stackTreeProvider.js";
 import { StatusBar } from "./statusBar.js";
 import { FileWatcher } from "./fileWatcher.js";
 import { registerCommands } from "./commands.js";
-import { resolveGitCommonDir } from "./git.js";
+import { resolveGitCommonDir, resolveGitDir } from "./git.js";
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -15,8 +16,12 @@ export async function activate(
 
   // Resolve git directory for file watching
   let gitCommonDir: string;
+  let gitDir: string;
   try {
-    gitCommonDir = await resolveGitCommonDir(workspaceRoot);
+    [gitCommonDir, gitDir] = await Promise.all([
+      resolveGitCommonDir(workspaceRoot),
+      resolveGitDir(workspaceRoot),
+    ]);
   } catch {
     // Not a git repo — register commands so stackInit can still be triggered,
     // but skip tree/watcher/status bar
@@ -31,7 +36,7 @@ export async function activate(
     return;
   }
 
-  const graftDir = `${gitCommonDir}/graft`;
+  const graftDir = path.join(gitCommonDir, "graft");
 
   // Initialize components
   const cli = new GraftCli();
@@ -39,8 +44,7 @@ export async function activate(
   const treeProvider = new StackTreeProvider(reader);
   const statusBar = new StatusBar();
   const fileWatcher = new FileWatcher(() => {
-    treeProvider.refresh();
-    updateStatusBar();
+    treeProvider.refreshImmediate();
   });
 
   // Register tree view
@@ -48,8 +52,8 @@ export async function activate(
     treeDataProvider: treeProvider,
   });
 
-  // Start file watcher
-  fileWatcher.watch(graftDir, gitCommonDir);
+  // Start file watcher — pass per-worktree git dir for HEAD watching
+  fileWatcher.watch(graftDir, gitDir);
 
   // Register commands
   registerCommands(context, cli, treeProvider, () => workspaceRoot);
@@ -61,8 +65,16 @@ export async function activate(
     })
   );
 
+  // Invalidate cached CLI path on settings change
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("graft.cliPath")) {
+        cli.resetBinaryPath();
+      }
+    })
+  );
+
   async function updateStatusBar(): Promise<void> {
-    // Re-read state for status bar
     try {
       const state = await reader.readState();
       statusBar.update(state);
@@ -78,9 +90,11 @@ export async function activate(
   try {
     await cli.findBinary();
   } catch {
-    vscode.window.showWarningMessage(
-      "Graft CLI not found. Install it with `brew install graft` or set graft.cliPath in settings.",
-      "Open Settings"
+    void Promise.resolve(
+      vscode.window.showWarningMessage(
+        "Graft CLI not found. Install it or set graft.cliPath in settings.",
+        "Open Settings"
+      )
     ).then((action) => {
       if (action === "Open Settings") {
         vscode.commands.executeCommand(
@@ -88,7 +102,7 @@ export async function activate(
           "graft.cliPath"
         );
       }
-    });
+    }).catch(() => { /* best-effort */ });
   }
 
   // Initial status bar update
