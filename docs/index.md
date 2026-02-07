@@ -145,5 +145,5 @@ No .NET runtime required — Graft compiles to a native AOT binary.
 - [CLI Reference](cli-reference) — Complete command reference
 - [Web UI](web-ui) — Browser-based interface
 - [FAQ](faq) — Common questions
-- [Releases](releases) — Release notes
+- [Changelog](changelog) — What changed in each version
 - [Source Code](https://github.com/radaiko/Graft)

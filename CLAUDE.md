@@ -70,6 +70,8 @@ All code in Graft.Core and Graft.Cli must be AOT-safe:
 - Internal storage dir: `.git/graft/`
 - Global config dir: `~/.config/graft/`
 - Error messages: Include what went wrong, why, and how to fix it (see [Error Handling](docs/spec/error-handling.md))
+- Changelogs: Always use [Keep a Changelog](https://keepachangelog.com/) style (Added, Changed, Removed, Fixed sections with `**Component:**` prefixes)
+- Git: Never commit directly to main/master. Always create a branch and open a PR.
 
 ## CLI Command Structure
 
