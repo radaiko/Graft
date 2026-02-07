@@ -111,7 +111,7 @@ public static class NukeCommand
         return command;
     }
 
-    private static Option<bool> CreateForceOption(string description = "Force operation")
+    private static Option<bool> CreateForceOption(string description = "Override dirty checks")
     {
         var opt = new Option<bool>("--force") { Description = description };
         opt.Aliases.Add("-f");

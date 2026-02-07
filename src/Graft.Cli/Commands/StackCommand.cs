@@ -456,12 +456,10 @@ public static class StackCommand
             var repoPath = Directory.GetCurrentDirectory();
 
             // Validate stack exists before prompting
-            var stackPath = Path.Combine(
-                Graft.Core.Git.GitRunner.ResolveGitCommonDir(repoPath),
-                "graft", "stacks", $"{name}.toml");
-            if (!File.Exists(stackPath))
+            var stacks = ConfigLoader.ListStacks(repoPath);
+            if (!stacks.Contains(name))
             {
-                Console.Error.WriteLine($"Error: Stack '{name}' not found.");
+                Console.Error.WriteLine($"Error: Stack '{name}' not found. Use 'graft stack list' to see available stacks.");
                 Environment.ExitCode = 1;
                 return;
             }

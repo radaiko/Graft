@@ -69,6 +69,14 @@ public static class WorktreeCommand
             var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
 
+            var wtPath = WorktreeManager.GetWorktreePath(branch, repoPath);
+            if (!Directory.Exists(wtPath))
+            {
+                Console.Error.WriteLine($"Error: No worktree found for '{branch}'. Use 'graft wt list' to see existing worktrees.");
+                Environment.ExitCode = 1;
+                return;
+            }
+
             Console.Write($"Remove worktree for '{branch}'? [y/N] ");
             var response = Console.ReadLine();
             if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
