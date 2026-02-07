@@ -1,0 +1,93 @@
+name: Release VS Extension
+
+on:
+  push:
+    tags:
+      - "vs/v*"
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#vs/v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "vs/v${{ steps.version.outputs.version }}" \
+            --title "VS Extension v${{ steps.version.outputs.version }}" \
+            --draft \
+            --generate-notes
+
+  build:
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore src/Graft.sln
+
+      - name: Update VSIX version
+        shell: pwsh
+        run: |
+          $manifest = "src/Graft.VS2026Extension/source.extension.vsixmanifest"
+          [xml]$xml = Get-Content $manifest
+          $ns = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+          $ns.AddNamespace("vs", "http://schemas.microsoft.com/developer/vsx-schema/2011")
+          $identity = $xml.SelectSingleNode("//vs:Identity", $ns)
+          $identity.SetAttribute("Version", "${{ needs.create-release.outputs.version }}")
+          $xml.Save((Resolve-Path $manifest))
+
+      - name: Build VSIX
+        run: >
+          msbuild src/Graft.VS2026Extension/Graft.VS2026Extension.csproj
+          /p:Configuration=Release
+          /p:DeployExtension=false
+
+      - name: Upload VSIX to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "vs/v${{ needs.create-release.outputs.version }}" \
+            "src/Graft.VS2026Extension/bin/Release/Graft.VS2026Extension.vsix"
+
+      - name: Publish to VS Marketplace
+        uses: cezarypiatek/VsixPublisherAction@1.1
+        with:
+          extension-file: src/Graft.VS2026Extension/bin/Release/Graft.VS2026Extension.vsix
+          publish-manifest-file: src/Graft.VS2026Extension/publishManifest.json
+          personal-access-code: ${{ secrets.VS_MARKETPLACE_PAT }}
+
+  publish-release:
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "vs/v${{ needs.create-release.outputs.version }}" \
+            --draft=false

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable"
+              xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <Extern href="stdidcmd.h" />
+  <Extern href="vsshlids.h" />
+
+  <Commands package="guidGraftPackage">
+
+    <Menus>
+      <Menu guid="guidGraftCommandSet" id="GraftSubMenu" priority="0x0100" type="Menu">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_MM_TOOLSADDINS" />
+        <Strings>
+          <ButtonText>Graft</ButtonText>
+        </Strings>
+      </Menu>
+    </Menus>
+
+    <Groups>
+      <Group guid="guidGraftCommandSet" id="GraftMenuGroup" priority="0x0100">
+        <Parent guid="guidGraftCommandSet" id="GraftSubMenu" />
+      </Group>
+      <Group guid="guidGraftCommandSet" id="GraftToolsGroup" priority="0x0200">
+        <Parent guid="guidGraftCommandSet" id="GraftSubMenu" />
+      </Group>
+    </Groups>
+
+    <Buttons>
+      <!-- Stack operations -->
+      <Button guid="guidGraftCommandSet" id="cmdidInitStack" priority="0x0100" type="Button">
+        <Parent guid="guidGraftCommandSet" id="GraftMenuGroup" />
+        <Strings>
+          <ButtonText>Initialize Stack...</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidGraftCommandSet" id="cmdidPushBranch" priority="0x0200" type="Button">
+        <Parent guid="guidGraftCommandSet" id="GraftMenuGroup" />
+        <Strings>
+          <ButtonText>Push Branch...</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidGraftCommandSet" id="cmdidPopBranch" priority="0x0300" type="Button">
+        <Parent guid="guidGraftCommandSet" id="GraftMenuGroup" />
+        <Strings>
+          <ButtonText>Pop Branch</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidGraftCommandSet" id="cmdidSyncStack" priority="0x0400" type="Button">
+        <Parent guid="guidGraftCommandSet" id="GraftMenuGroup" />
+        <Strings>
+          <ButtonText>Sync Stack</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidGraftCommandSet" id="cmdidSwitchStack" priority="0x0500" type="Button">
+        <Parent guid="guidGraftCommandSet" id="GraftMenuGroup" />
+        <Strings>
+          <ButtonText>Switch Stack...</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidGraftCommandSet" id="cmdidStackLog" priority="0x0600" type="Button">
+        <Parent guid="guidGraftCommandSet" id="GraftMenuGroup" />
+        <Strings>
+          <ButtonText>View Stack Log</ButtonText>
+        </Strings>
+      </Button>
+
+      <!-- Tools -->
+      <Button guid="guidGraftCommandSet" id="cmdidOpenStackExplorer" priority="0x0100" type="Button">
+        <Parent guid="guidGraftCommandSet" id="GraftToolsGroup" />
+        <Strings>
+          <ButtonText>Open Stack Explorer</ButtonText>
+        </Strings>
+      </Button>
+    </Buttons>
+
+  </Commands>
+
+  <Symbols>
+    <GuidSymbol name="guidGraftPackage" value="{a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d}" />
+
+    <GuidSymbol name="guidGraftCommandSet" value="{b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e}">
+      <IDSymbol name="GraftSubMenu" value="0x1000" />
+      <IDSymbol name="GraftMenuGroup" value="0x1100" />
+      <IDSymbol name="GraftToolsGroup" value="0x1200" />
+      <IDSymbol name="cmdidInitStack" value="0x0100" />
+      <IDSymbol name="cmdidPushBranch" value="0x0101" />
+      <IDSymbol name="cmdidPopBranch" value="0x0102" />
+      <IDSymbol name="cmdidSyncStack" value="0x0103" />
+      <IDSymbol name="cmdidSwitchStack" value="0x0104" />
+      <IDSymbol name="cmdidStackLog" value="0x0105" />
+      <IDSymbol name="cmdidOpenStackExplorer" value="0x0200" />
+    </GuidSymbol>
+  </Symbols>
+
+</CommandTable>
