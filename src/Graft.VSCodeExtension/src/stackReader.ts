@@ -54,7 +54,7 @@ export class StackReader {
         path.join(graftDir, "active-stack"),
         "utf-8"
       );
-      const trimmed = content.trim();
+      const trimmed = content.replace(/^\uFEFF/, "").trim();
       return trimmed || null;
     } catch {
       return null;
@@ -151,7 +151,7 @@ export class StackReader {
       const graftDir = await this.getGraftDir();
       const opPath = path.join(graftDir, "operation.toml");
       const content = await readFile(opPath, "utf-8");
-      const table = parse(content);
+      const table = parse(content.replace(/^\uFEFF/, ""));
       return table["stack"] === stackName;
     } catch {
       return false;

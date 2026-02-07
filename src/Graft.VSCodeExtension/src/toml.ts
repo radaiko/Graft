@@ -9,7 +9,8 @@ export function parseStackToml(
   tomlContent: string,
   fallbackName: string
 ): StackDefinition {
-  const table = parse(tomlContent);
+  // .NET's Encoding.UTF8 writes a BOM — strip it before parsing
+  const table = parse(tomlContent.replace(/^\uFEFF/, ""));
 
   const trunk = table["trunk"];
   if (typeof trunk !== "string") {
