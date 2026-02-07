@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json.schemastore.org/vsix-publish",
+  "categories": ["build"],
+  "identity": {
+    "internalName": "Graft"
+  },
+  "overview": "overview.md",
+  "publisher": "Graft",
+  "priceCategory": "free"
+}
