@@ -89,6 +89,18 @@ public sealed class TempGitRepo : IDisposable
 
     public void Dispose()
     {
+        // Clean up any worktree sibling directories (e.g. /tmp/graft-test-xxx.wt.branch/)
+        var parentDir = System.IO.Path.GetDirectoryName(Path);
+        var repoName = System.IO.Path.GetFileName(Path);
+        if (parentDir != null && Directory.Exists(parentDir))
+        {
+            foreach (var dir in Directory.GetDirectories(parentDir, $"{repoName}.wt.*"))
+            {
+                SetAttributesNormal(new DirectoryInfo(dir));
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+
         if (Directory.Exists(Path))
         {
             // On some systems .git files may be read-only

@@ -21,6 +21,7 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 - **Web UI:** Remove unused settings page
 
 ### Fixed
+- **Core:** `graft stack sync` no longer fails when a stack branch has an active worktree (#3)
 
 ## [0.2.0] -- Initial public release
 
