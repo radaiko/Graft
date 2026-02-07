@@ -26,14 +26,6 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Require release notes
-        run: |
-          NOTES_FILE="docs/release/cli/v${{ steps.version.outputs.version }}.md"
-          if [ ! -f "$NOTES_FILE" ]; then
-            echo "::error::Release notes not found at ${NOTES_FILE}. Create this file before tagging a release."
-            exit 1
-          fi
-
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -41,7 +33,7 @@ jobs:
           gh release create "cli/v${{ steps.version.outputs.version }}" \
             --title "Graft CLI v${{ steps.version.outputs.version }}" \
             --draft \
-            --notes-file "docs/release/cli/v${{ steps.version.outputs.version }}.md"
+            --generate-notes
 
   build:
     needs: create-release
