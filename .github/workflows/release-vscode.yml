@@ -1,0 +1,69 @@
+name: Release VS Code Extension
+
+on:
+  push:
+    tags:
+      - "vscode/v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#vscode/v}"
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Invalid semver version: $VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/Graft.VSCodeExtension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: src/Graft.VSCodeExtension
+        run: npm ci
+
+      - name: Set version in package.json
+        working-directory: src/Graft.VSCodeExtension
+        run: npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
+
+      - name: Copy LICENSE
+        run: cp LICENSE src/Graft.VSCodeExtension/LICENSE
+
+      - name: Build
+        working-directory: src/Graft.VSCodeExtension
+        run: npm run build
+
+      - name: Package VSIX
+        working-directory: src/Graft.VSCodeExtension
+        run: npx @vscode/vsce package --no-update-package-json
+
+      - name: Publish to VS Code Marketplace
+        working-directory: src/Graft.VSCodeExtension
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx @vscode/vsce publish --no-update-package-json
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "vscode/v${{ steps.version.outputs.version }}" \
+            --title "Graft VS Code Extension v${{ steps.version.outputs.version }}" \
+            --generate-notes \
+            src/Graft.VSCodeExtension/*.vsix
