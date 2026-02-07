@@ -206,7 +206,7 @@ public sealed class ApiServer : IDisposable
                     break;
                 }
 
-// Git endpoints
+                // Git endpoints
                 case ["api", "git", "status"] when method == "GET":
                     await GitHandler.GetStatus(ctx, _repoPath, ct);
                     break;
