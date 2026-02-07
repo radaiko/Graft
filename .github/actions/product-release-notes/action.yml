@@ -32,35 +32,54 @@ runs:
       run: |
         set -euo pipefail
 
-        # Determine date range from tags for bulk PR query
-        TAG_DATE=$(git log -1 --format="%aI" "$TAG")
+        OWNER="${GITHUB_REPOSITORY%%/*}"
+        REPO="${GITHUB_REPOSITORY##*/}"
 
+        # Determine commit range and changelog URL
         if [ -n "$PREV_TAG" ]; then
-          PREV_DATE=$(git log -1 --format="%aI" "$PREV_TAG")
-          SEARCH_QUERY="merged:${PREV_DATE}..${TAG_DATE}"
+          RANGE="${PREV_TAG}..${TAG}"
           FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${TAG}"
         else
-          SEARCH_QUERY="merged:<=${TAG_DATE}"
+          RANGE="$TAG"
           FULL_CHANGELOG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${TAG}"
         fi
 
-        # Bulk query: fetch all merged PRs with the product label in one call
-        NOTES=""
-        PR_LIST=$(gh pr list \
-          --state merged \
-          --label "$PRODUCT_LABEL" \
-          --search "$SEARCH_QUERY" \
-          --json number,title,author \
-          --limit 200 \
-          --jq '.[] | "* \(.title) by @\(.author.login) in #\(.number)"')
+        # Extract unique PR numbers from commit messages (squash-merge format: "Title (#NNN)")
+        mapfile -t PR_NUMS < <(git log "$RANGE" --format="%s" | grep -oE '#[0-9]+' | tr -d '#' | sort -un)
 
-        if [ -n "$PR_LIST" ]; then
-          NOTES="## What's Changed"$'\n'"${PR_LIST}"$'\n'
-        else
-          NOTES="No product-specific changes in this release."
+        NOTES=""
+
+        if [ "${#PR_NUMS[@]}" -gt 0 ]; then
+          # Build a single GraphQL query to fetch all PRs with their labels
+          QUERY='query { repository(owner: "'"$OWNER"'", name: "'"$REPO"'") {'
+          for i in "${!PR_NUMS[@]}"; do
+            QUERY="${QUERY} pr${i}: pullRequest(number: ${PR_NUMS[$i]}) { number title author { login } labels(first: 10) { nodes { name } } }"
+          done
+          QUERY="${QUERY} }}"
+
+          RESULT=$(gh api graphql -f query="$QUERY")
+
+          # Filter by product label and format
+          for i in "${!PR_NUMS[@]}"; do
+            HAS_LABEL=$(echo "$RESULT" | jq -r \
+              --arg label "$PRODUCT_LABEL" \
+              ".data.repository.pr${i}.labels.nodes[]? | select(.name == \$label) | .name")
+
+            if [ -n "$HAS_LABEL" ]; then
+              TITLE=$(echo "$RESULT" | jq -r ".data.repository.pr${i}.title")
+              USER=$(echo "$RESULT" | jq -r ".data.repository.pr${i}.author.login")
+              NOTES="${NOTES}* ${TITLE} by @${USER} in #${PR_NUMS[$i]}"$'\n'
+            fi
+          done
         fi
 
-        FINAL="${NOTES}"$'\n'"**Full Changelog**: ${FULL_CHANGELOG_URL}"
+        if [ -z "$NOTES" ]; then
+          FINAL="No product-specific changes in this release."
+        else
+          FINAL="## What's Changed"$'\n'"${NOTES}"
+        fi
+
+        FINAL="${FINAL}"$'\n'"**Full Changelog**: ${FULL_CHANGELOG_URL}"
 
         # Write multiline output with unique delimiter
         DELIM="RELEASE_NOTES_EOF_${RANDOM}_$$"
