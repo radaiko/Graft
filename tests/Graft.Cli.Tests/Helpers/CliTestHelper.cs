@@ -26,6 +26,10 @@ public static class CliTestHelper
         root.Add(ScanCommand.Create());
         root.Add(CdCommand.Create());
 
+        // Status command
+        root.Add(StatusCommand.Create());
+        root.Add(StatusCommand.CreateAlias());
+
         // UI command
         root.Add(UiCommand.Create());
 
