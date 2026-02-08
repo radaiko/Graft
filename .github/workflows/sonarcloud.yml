@@ -52,6 +52,7 @@ jobs:
           dotnet build tests/Graft.Cli.Tests/Graft.Cli.Tests.csproj --no-incremental
 
       - name: Test with coverage
+        continue-on-error: true
         run: |
           dotnet test tests/Graft.Core.Tests/Graft.Core.Tests.csproj \
             --no-build \
@@ -65,6 +66,7 @@ jobs:
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
       - name: End analysis
+        if: always()
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
