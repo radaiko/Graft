@@ -118,15 +118,6 @@ These endpoints wrap the worktree commands described in the [Product Specificati
 | GET | `/api/status` | Cross-repo status overview (all discovered repos) |
 | GET | `/api/status/{reponame}` | Detailed status for a specific repo |
 
-### Config Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/config` | Read repo config (`.git/graft/config.toml`) |
-| PUT | `/api/config` | Write updated config |
-| GET | `/api/config/worktree` | Read worktree config (`worktrees.toml`) |
-| PUT | `/api/config/worktree` | Write updated worktree config |
-
 ### Git Context Endpoints
 
 | Method | Path | Description |
@@ -157,13 +148,7 @@ A table of active worktrees showing: path, branch, HEAD SHA. Each row has a Remo
 
 ### 3. Settings View
 
-A form that reads from and writes to the TOML config files:
-
-- **Defaults** — trunk branch name, PR strategy
-- **Worktree Layout** — pattern string (must contain `{name}`)
-- **Templates** — list of template file mappings (src, dst, mode). Add/remove rows.
-
-Each section has a Save button. Validation is inline.
+*Planned.* This view will provide a form for editing repo-level configuration (e.g., default trunk branch). Not yet implemented.
 
 ---
 

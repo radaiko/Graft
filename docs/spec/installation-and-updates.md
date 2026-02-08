@@ -93,12 +93,6 @@ See [Error Handling — Update Rollback](./error-handling.md#update-rollback) fo
 
 Before applying an update, the staged binary path is validated to be within the expected `~/.config/graft/staging/` directory. Paths that resolve outside this directory are rejected to prevent path traversal attacks from tampered state files.
 
-### Disabling Auto-Update
-
-```
-graft config set update.enabled false
-```
-
 ### State File
 
 Update state is stored in `~/.config/graft/update-state.toml`. See [Data Storage — `update-state.toml`](./data-storage.md) for the full schema.
