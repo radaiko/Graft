@@ -19,9 +19,6 @@ main
 
 Each branch is its own PR. Each PR shows only its own changes. `graft stack sync` keeps them all up to date in one command.
 
-* TOC
-{:toc}
-
 ---
 
 ## Why Graft?
