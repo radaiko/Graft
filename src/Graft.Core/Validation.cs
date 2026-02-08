@@ -21,7 +21,7 @@ public static partial class Validation
     /// </summary>
     public static void ValidateName(string name, string kind)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         if (name.Contains(".."))
             throw new ArgumentException($"{kind} '{name}' must not contain '..'", nameof(name));
@@ -58,7 +58,7 @@ public static partial class Validation
     public static void ValidateStackName(string name)
     {
         const string kind = "Stack name";
-        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         if (name.Contains(".."))
             throw new ArgumentException($"{kind} '{name}' must not contain '..'", nameof(name));

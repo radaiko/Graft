@@ -210,6 +210,49 @@ public sealed class StatusCollectorTests : IDisposable
     }
 
     [Fact]
+    public async Task CollectOne_WithUpstream_ShowsAheadBehind()
+    {
+        // Create a bare repo to act as remote
+        var bareDir = Path.Combine(Path.GetTempPath(), $"graft-bare-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(bareDir);
+        try
+        {
+            // Init bare repo and push to it
+            using var bareProcess = new System.Diagnostics.Process();
+            bareProcess.StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "git",
+                WorkingDirectory = bareDir,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            bareProcess.StartInfo.ArgumentList.Add("init");
+            bareProcess.StartInfo.ArgumentList.Add("--bare");
+            bareProcess.Start();
+            bareProcess.WaitForExit();
+
+            _repo.RunGit("remote", "add", "origin", bareDir);
+            _repo.RunGit("push", "-u", "origin", "master");
+
+            // Make a local commit so we're 1 ahead
+            _repo.CommitFile("ahead.txt", "content", "ahead commit");
+
+            var status = await StatusCollector.CollectOneAsync(_repo.Path);
+
+            Assert.True(status.IsAccessible);
+            Assert.Equal(1, status.Ahead);
+            Assert.Equal(0, status.Behind);
+        }
+        finally
+        {
+            if (Directory.Exists(bareDir))
+                Directory.Delete(bareDir, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task CollectOne_WithWorktree_ShowsWorktreeCount()
     {
         _repo.RunGit("branch", "wt-branch");

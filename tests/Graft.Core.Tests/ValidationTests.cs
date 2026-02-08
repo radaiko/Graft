@@ -110,4 +110,85 @@ public sealed class ValidationTests
         Assert.ThrowsAny<ArgumentException>(() =>
             Validation.ValidateStackName("foo\\bar"));
     }
+
+    // Coverage for ValidateName paths changed in SonarCloud fix
+    [Fact]
+    public void ValidateName_ConsecutiveSlashes_Throws()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateName("foo//bar", "Branch name"));
+        Assert.Equal("name", ex.ParamName);
+    }
+
+    [Fact]
+    public void ValidateName_LockSuffix_Throws()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateName("refs.lock", "Branch name"));
+        Assert.Equal("name", ex.ParamName);
+    }
+
+    [Fact]
+    public void ValidateName_AtBrace_Throws()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateName("foo@{bar", "Branch name"));
+        Assert.Equal("name", ex.ParamName);
+    }
+
+    [Fact]
+    public void ValidateName_InvalidCharacters_Throws()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateName("foo bar", "Branch name"));
+        Assert.Equal("name", ex.ParamName);
+    }
+
+    [Fact]
+    public void ValidateName_ParamName_IsCorrect()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateName("../bad", "Branch name"));
+        Assert.Equal("name", ex.ParamName);
+    }
+
+    [Fact]
+    public void ValidateStackName_PathTraversal_Throws()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateStackName("foo..bar"));
+        Assert.Equal("name", ex.ParamName);
+    }
+
+    [Fact]
+    public void ValidateStackName_NullByte_Throws()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateStackName("foo\0bar"));
+        Assert.Equal("name", ex.ParamName);
+    }
+
+    [Fact]
+    public void ValidateStackName_InvalidCharacters_Throws()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateStackName("foo bar"));
+        Assert.Equal("name", ex.ParamName);
+    }
+
+    [Fact]
+    public void ValidateStackName_ParamName_IsCorrect()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateStackName("-bad"));
+        Assert.Equal("name", ex.ParamName);
+    }
+
+    [Fact]
+    public void ValidateStackName_ForwardSlash_ParamName_IsCorrect()
+    {
+        var ex = Assert.ThrowsAny<ArgumentException>(() =>
+            Validation.ValidateStackName("foo/bar"));
+        Assert.Equal("name", ex.ParamName);
+    }
 }
