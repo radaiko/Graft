@@ -55,7 +55,7 @@ public sealed class GitRunner
         }
         catch (OperationCanceledException) when (_ct.IsCancellationRequested)
         {
-            try { process.Kill(entireProcessTree: true); } catch { }
+            try { process.Kill(entireProcessTree: true); } catch { /* Best-effort kill on cancellation */ }
             throw; // Propagate caller cancellation
         }
         catch (OperationCanceledException)
@@ -65,7 +65,7 @@ public sealed class GitRunner
                 process.Kill(entireProcessTree: true);
                 await process.WaitForExitAsync(new CancellationTokenSource(TimeSpan.FromSeconds(2)).Token);
             }
-            catch { }
+            catch { /* Best-effort kill/wait on timeout */ }
             return new GitResult(-1, "", $"git command timed out after {timeout.TotalSeconds}s: git {string.Join(' ', args)}");
         }
     }

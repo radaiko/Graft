@@ -6,7 +6,7 @@ using Tomlyn.Model;
 
 namespace Graft.Core.AutoUpdate;
 
-public static class UpdateChecker
+public static partial class UpdateChecker
 {
     private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(1);
 
@@ -20,11 +20,12 @@ public static class UpdateChecker
         return DateTime.UtcNow - state.LastChecked > CheckInterval;
     }
 
-    private static readonly Regex SafeVersionPattern = new(@"^[a-zA-Z0-9][a-zA-Z0-9.\-]{0,63}$", RegexOptions.Compiled);
+    [GeneratedRegex(@"^[a-zA-Z0-9][a-zA-Z0-9.\-]{0,63}$")]
+    private static partial Regex SafeVersionPattern();
 
     public static async Task StageUpdateAsync(string version, Stream binaryStream, string stagingDir, string checksum)
     {
-        if (!SafeVersionPattern.IsMatch(version))
+        if (!SafeVersionPattern().IsMatch(version))
             throw new ArgumentException(
                 "Version string must be 1-64 alphanumeric characters, dots, or hyphens, and start with alphanumeric.", nameof(version));
 
@@ -41,7 +42,7 @@ public static class UpdateChecker
         catch
         {
             // Clean up partial file on download failure
-            try { File.Delete(binaryPath); } catch { }
+            try { File.Delete(binaryPath); } catch { /* Best-effort cleanup of partial download */ }
             throw;
         }
 

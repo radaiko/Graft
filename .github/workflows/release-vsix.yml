@@ -5,13 +5,12 @@ on:
     tags:
       - "vs/v*"
 
-permissions:
-  contents: write
-  pull-requests: read
-
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -54,6 +53,8 @@ jobs:
   build:
     needs: create-release
     runs-on: windows-latest
+    permissions:
+      contents: write
     env:
       HAS_MARKETPLACE_PAT: ${{ secrets.VS_MARKETPLACE_PAT != '' }}
     steps:
@@ -114,6 +115,8 @@ jobs:
   publish-release:
     needs: [create-release, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4

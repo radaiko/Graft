@@ -136,7 +136,7 @@ public static class ReleaseFetcher
         }
         finally
         {
-            try { File.Delete(tempPath); } catch { }
+            try { File.Delete(tempPath); } catch { /* Best-effort cleanup of temp file */ }
         }
     }
 

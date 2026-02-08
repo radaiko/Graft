@@ -7,6 +7,8 @@ namespace Graft.Core.Tests.AutoUpdate;
 /// </summary>
 public sealed class AutoUpdateTests
 {
+    private static readonly string[] ValidOsPrefixes = ["win", "osx", "linux"];
+    private static readonly string[] ValidArchSuffixes = ["x64", "arm64"];
     // Requirement: Checks for updates in background (doesn't slow command)
     [Fact]
     public void Update_CheckIsNonBlocking()
@@ -180,8 +182,8 @@ public sealed class AutoUpdateTests
         Assert.Contains("-", rid);
         var parts = rid.Split('-');
         Assert.Equal(2, parts.Length);
-        Assert.Contains(parts[0], new[] { "win", "osx", "linux" });
-        Assert.Contains(parts[1], new[] { "x64", "arm64" });
+        Assert.Contains(parts[0], ValidOsPrefixes);
+        Assert.Contains(parts[1], ValidArchSuffixes);
 
         // Archive extension matches OS
         if (parts[0] == "win")

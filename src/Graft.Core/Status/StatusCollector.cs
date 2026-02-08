@@ -57,10 +57,10 @@ public static class StatusCollector
             if (abResult.Success)
             {
                 var parts = abResult.Stdout.Split('\t', StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length == 2)
+                if (parts.Length == 2
+                    && int.TryParse(parts[0], out var ahead)
+                    && int.TryParse(parts[1], out var behind))
                 {
-                    int.TryParse(parts[0], out var ahead);
-                    int.TryParse(parts[1], out var behind);
                     status.Ahead = ahead;
                     status.Behind = behind;
                 }
@@ -155,10 +155,10 @@ public static class StatusCollector
                                 if (branchAbResult.Success)
                                 {
                                     var parts = branchAbResult.Stdout.Split('\t', StringSplitOptions.RemoveEmptyEntries);
-                                    if (parts.Length == 2)
+                                    if (parts.Length == 2
+                                        && int.TryParse(parts[0], out var ahead)
+                                        && int.TryParse(parts[1], out var behind))
                                     {
-                                        int.TryParse(parts[0], out var ahead);
-                                        int.TryParse(parts[1], out var behind);
                                         branchSummary.Ahead = ahead;
                                         branchSummary.Behind = behind;
                                     }

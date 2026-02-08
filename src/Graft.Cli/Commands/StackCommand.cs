@@ -77,7 +77,7 @@ public static class StackCommand
     private static Command CreateListCommand()
     {
         var command = new Command("list", "List all stacks");
-        command.SetAction(async (parseResult, ct) => await DoList(ct));
+        command.SetAction((parseResult) => DoList());
         return command;
     }
 
@@ -85,11 +85,11 @@ public static class StackCommand
     {
         var command = new Command("ls", "List all stacks");
         command.Hidden = true;
-        command.SetAction(async (parseResult, ct) => await DoList(ct));
+        command.SetAction((parseResult) => DoList());
         return command;
     }
 
-    private static Task DoList(CancellationToken ct)
+    private static void DoList()
     {
         var repoPath = Directory.GetCurrentDirectory();
 
@@ -99,7 +99,7 @@ public static class StackCommand
             if (stacks.Length == 0)
             {
                 Console.WriteLine("No stacks found. Run 'graft stack init <name>' to create one.");
-                return Task.CompletedTask;
+                return;
             }
 
             var active = ConfigLoader.LoadActiveStack(repoPath);
@@ -114,7 +114,6 @@ public static class StackCommand
             Console.Error.WriteLine($"Error: {ex.Message}");
             Environment.ExitCode = 1;
         }
-        return Task.CompletedTask;
     }
 
     private static Command CreateSwitchCommand()

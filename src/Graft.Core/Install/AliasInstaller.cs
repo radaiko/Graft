@@ -122,7 +122,7 @@ public static class AliasInstaller
 
         if (!process.WaitForExit(10_000))
         {
-            try { process.Kill(entireProcessTree: true); } catch { }
+            try { process.Kill(entireProcessTree: true); } catch { /* Best-effort kill on timeout */ }
             throw new InvalidOperationException($"git {string.Join(' ', args)} timed out");
         }
 

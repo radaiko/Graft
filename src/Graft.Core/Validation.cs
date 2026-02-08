@@ -21,35 +21,35 @@ public static partial class Validation
     /// </summary>
     public static void ValidateName(string name, string kind)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name, kind);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
         if (name.Contains(".."))
-            throw new ArgumentException($"{kind} '{name}' must not contain '..'", kind);
+            throw new ArgumentException($"{kind} '{name}' must not contain '..'", nameof(name));
 
         if (name.Contains('\0'))
-            throw new ArgumentException($"{kind} '{name}' must not contain null bytes", kind);
+            throw new ArgumentException($"{kind} '{name}' must not contain null bytes", nameof(name));
 
         if (name.StartsWith('-'))
-            throw new ArgumentException($"{kind} '{name}' must not start with '-'", kind);
+            throw new ArgumentException($"{kind} '{name}' must not start with '-'", nameof(name));
 
         if (name.StartsWith('/') || name.EndsWith('/'))
-            throw new ArgumentException($"{kind} '{name}' must not start or end with '/'", kind);
+            throw new ArgumentException($"{kind} '{name}' must not start or end with '/'", nameof(name));
 
         if (name.Contains("//"))
-            throw new ArgumentException($"{kind} '{name}' must not contain consecutive slashes", kind);
+            throw new ArgumentException($"{kind} '{name}' must not contain consecutive slashes", nameof(name));
 
         if (name.Contains('\\'))
-            throw new ArgumentException($"{kind} '{name}' must not contain backslashes", kind);
+            throw new ArgumentException($"{kind} '{name}' must not contain backslashes", nameof(name));
 
         if (name.EndsWith(".lock", StringComparison.Ordinal))
-            throw new ArgumentException($"{kind} '{name}' must not end with '.lock'", kind);
+            throw new ArgumentException($"{kind} '{name}' must not end with '.lock'", nameof(name));
 
         if (name.Contains("@{"))
-            throw new ArgumentException($"{kind} '{name}' must not contain '@{{'", kind);
+            throw new ArgumentException($"{kind} '{name}' must not contain '@{{'", nameof(name));
 
         if (!SafeNamePattern().IsMatch(name))
             throw new ArgumentException(
-                $"{kind} '{name}' contains invalid characters. Use alphanumeric, hyphens, underscores, dots, or forward slashes.", kind);
+                $"{kind} '{name}' contains invalid characters. Use alphanumeric, hyphens, underscores, dots, or forward slashes.", nameof(name));
     }
 
     /// <summary>
@@ -58,25 +58,25 @@ public static partial class Validation
     public static void ValidateStackName(string name)
     {
         const string kind = "Stack name";
-        ArgumentException.ThrowIfNullOrWhiteSpace(name, kind);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
         if (name.Contains(".."))
-            throw new ArgumentException($"{kind} '{name}' must not contain '..'", kind);
+            throw new ArgumentException($"{kind} '{name}' must not contain '..'", nameof(name));
 
         if (name.Contains('\0'))
-            throw new ArgumentException($"{kind} '{name}' must not contain null bytes", kind);
+            throw new ArgumentException($"{kind} '{name}' must not contain null bytes", nameof(name));
 
         if (name.StartsWith('-'))
-            throw new ArgumentException($"{kind} '{name}' must not start with '-'", kind);
+            throw new ArgumentException($"{kind} '{name}' must not start with '-'", nameof(name));
 
         if (name.Contains('/'))
-            throw new ArgumentException($"{kind} '{name}' must not contain forward slashes. Stack names are used as filenames.", kind);
+            throw new ArgumentException($"{kind} '{name}' must not contain forward slashes. Stack names are used as filenames.", nameof(name));
 
         if (name.Contains('\\'))
-            throw new ArgumentException($"{kind} '{name}' must not contain backslashes", kind);
+            throw new ArgumentException($"{kind} '{name}' must not contain backslashes", nameof(name));
 
         if (!SafeStackNamePattern().IsMatch(name))
             throw new ArgumentException(
-                $"{kind} '{name}' contains invalid characters. Use alphanumeric, hyphens, underscores, or dots.", kind);
+                $"{kind} '{name}' contains invalid characters. Use alphanumeric, hyphens, underscores, or dots.", nameof(name));
     }
 }

@@ -53,7 +53,7 @@ public static class WorktreeCommand
                             Branch = branch,
                         }, configDir);
                     }
-                    catch { }
+                    catch { /* Best-effort cache update — non-critical */ }
                 }
                 else
                 {
@@ -175,7 +175,7 @@ public static class WorktreeCommand
             {
                 ConfigLoader.RemoveRepoFromCache(wtPath, CliPaths.GetConfigDir());
             }
-            catch { }
+            catch { /* Best-effort cache cleanup — non-critical */ }
         }
         catch (Exception ex)
         {
