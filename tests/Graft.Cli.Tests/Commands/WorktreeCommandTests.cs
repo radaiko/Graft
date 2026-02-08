@@ -60,6 +60,13 @@ public sealed class WorktreeCommandTests
         Assert.Empty(result.Errors);
     }
 
+    [Fact]
+    public void WtRemove_WithForceLong_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("wt remove feature-branch --force");
+        Assert.Empty(result.Errors);
+    }
+
     // Requirement: `graft wt rm <branch>` (alias) parses correctly
     [Fact]
     public void WtRm_WithBranch_ParsesWithoutErrors()

@@ -569,12 +569,15 @@ public static class StackCommand
             return;
         }
 
-        Console.Write($"Delete stack '{name}'? Branches will be kept. [y/N] ");
-        var response = Console.ReadLine();
-        if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+        if (!Console.IsInputRedirected)
         {
-            Console.WriteLine("Aborted.");
-            return;
+            Console.Write($"Delete stack '{name}'? Branches will be kept. [y/N] ");
+            var response = Console.ReadLine();
+            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Aborted.");
+                return;
+            }
         }
 
         try

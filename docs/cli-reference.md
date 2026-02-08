@@ -137,7 +137,7 @@ Stack: my-feature (trunk: main)
 
 ### `graft stack remove <name>` (alias: `rm`)
 
-Remove a stack. Git branches are kept. If the removed stack was active, the active stack is cleared.
+Remove a stack. Prompts for confirmation. Git branches are kept. If the removed stack was active, the active stack is cleared.
 
 ```bash
 $ graft stack remove my-feature
@@ -169,7 +169,7 @@ Created worktree at ../Graft.wt.feature-new-thing/
 
 ### `graft wt remove <branch> [-f/--force]` (alias: `rm`)
 
-Remove the worktree for the named branch. Fails if uncommitted changes exist unless `-f` is used. Also removes the worktree from the repo cache.
+Remove the worktree for the named branch. Prompts for confirmation. Fails if uncommitted changes exist unless `-f` is used to override dirty checks. Also removes the worktree from the repo cache.
 
 ```bash
 $ graft wt remove feature/auth
