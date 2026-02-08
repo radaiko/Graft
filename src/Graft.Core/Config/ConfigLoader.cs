@@ -3,6 +3,7 @@ using System.Text;
 using Tomlyn;
 using Tomlyn.Model;
 using Graft.Core.Git;
+using Graft.Core.Scan;
 using Graft.Core.Stack;
 
 namespace Graft.Core.Config;
@@ -250,5 +251,147 @@ public static class ConfigLoader
         }
 
         return state;
+    }
+
+    // ========================
+    // Scan Paths
+    // ========================
+
+    public static List<ScanPath> LoadScanPaths(string configDir)
+    {
+        var configPath = Path.Combine(configDir, "config.toml");
+        if (!File.Exists(configPath))
+            return [];
+
+        var toml = File.ReadAllText(configPath, Encoding.UTF8);
+        var table = Toml.ToModel(toml);
+
+        var paths = new List<ScanPath>();
+        if (table.TryGetValue("scan_paths", out var scanPathsObj) && scanPathsObj is TomlTableArray scanPaths)
+        {
+            foreach (TomlTable entry in scanPaths)
+            {
+                if (entry.TryGetValue("path", out var pathObj) && pathObj is string pathStr)
+                    paths.Add(new ScanPath { Path = pathStr });
+            }
+        }
+
+        return paths;
+    }
+
+    public static void SaveScanPaths(List<ScanPath> scanPaths, string configDir)
+    {
+        Directory.CreateDirectory(configDir);
+        var configPath = Path.Combine(configDir, "config.toml");
+
+        // Load existing config to preserve other keys
+        TomlTable table;
+        if (File.Exists(configPath))
+        {
+            var existing = File.ReadAllText(configPath, Encoding.UTF8);
+            table = Toml.ToModel(existing);
+        }
+        else
+        {
+            table = new TomlTable();
+        }
+
+        // Replace scan_paths
+        if (scanPaths.Count > 0)
+        {
+            var arr = new TomlTableArray();
+            foreach (var sp in scanPaths)
+                arr.Add(new TomlTable { ["path"] = sp.Path });
+            table["scan_paths"] = arr;
+        }
+        else
+        {
+            table.Remove("scan_paths");
+        }
+
+        var tempPath = $"{configPath}.tmp.{Guid.NewGuid():N}";
+        File.WriteAllText(tempPath, Toml.FromModel(table), Encoding.UTF8);
+        File.Move(tempPath, configPath, overwrite: true);
+    }
+
+    // ========================
+    // Repo Cache
+    // ========================
+
+    public static RepoCache LoadRepoCache(string configDir)
+    {
+        var cachePath = Path.Combine(configDir, "repo-cache.toml");
+        if (!File.Exists(cachePath))
+            return new RepoCache();
+
+        var toml = File.ReadAllText(cachePath, Encoding.UTF8);
+        var table = Toml.ToModel(toml);
+
+        var cache = new RepoCache();
+        if (table.TryGetValue("repos", out var reposObj) && reposObj is TomlTableArray repos)
+        {
+            foreach (TomlTable entry in repos)
+            {
+                if (entry.TryGetValue("name", out var nameObj) && nameObj is string name &&
+                    entry.TryGetValue("path", out var pathObj) && pathObj is string path)
+                {
+                    var repo = new CachedRepo { Name = name, Path = path };
+                    if (entry.TryGetValue("branch", out var branchObj) && branchObj is string branch)
+                        repo.Branch = branch;
+                    if (entry.TryGetValue("auto_fetch", out var afObj) && afObj is bool af)
+                        repo.AutoFetch = af;
+                    cache.Repos.Add(repo);
+                }
+            }
+        }
+
+        return cache;
+    }
+
+    public static void SaveRepoCache(RepoCache cache, string configDir)
+    {
+        Directory.CreateDirectory(configDir);
+        var cachePath = Path.Combine(configDir, "repo-cache.toml");
+
+        var table = new TomlTable();
+        if (cache.Repos.Count > 0)
+        {
+            var arr = new TomlTableArray();
+            foreach (var repo in cache.Repos)
+            {
+                var entry = new TomlTable
+                {
+                    ["name"] = repo.Name,
+                    ["path"] = repo.Path,
+                    ["auto_fetch"] = repo.AutoFetch,
+                };
+                if (repo.Branch != null)
+                    entry["branch"] = repo.Branch;
+                arr.Add(entry);
+            }
+            table["repos"] = arr;
+        }
+
+        var tempPath = $"{cachePath}.tmp.{Guid.NewGuid():N}";
+        File.WriteAllText(tempPath, Toml.FromModel(table), Encoding.UTF8);
+        File.Move(tempPath, cachePath, overwrite: true);
+    }
+
+    public static void AddRepoToCache(CachedRepo repo, string configDir)
+    {
+        var cache = LoadRepoCache(configDir);
+        // Avoid duplicates by path
+        if (cache.Repos.Any(r => string.Equals(r.Path, repo.Path, StringComparison.Ordinal)))
+            return;
+        cache.Repos.Add(repo);
+        SaveRepoCache(cache, configDir);
+    }
+
+    public static void RemoveRepoFromCache(string repoPath, string configDir)
+    {
+        var cache = LoadRepoCache(configDir);
+        var removed = cache.Repos.RemoveAll(r => string.Equals(r.Path, repoPath, StringComparison.Ordinal));
+        if (removed > 0)
+            SaveRepoCache(cache, configDir);
     }
 }

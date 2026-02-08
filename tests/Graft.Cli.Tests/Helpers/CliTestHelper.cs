@@ -23,6 +23,8 @@ public static class CliTestHelper
         root.Add(StackCommand.Create());
         root.Add(WorktreeCommand.Create());
         root.Add(NukeCommand.Create());
+        root.Add(ScanCommand.Create());
+        root.Add(CdCommand.Create());
 
         // UI command
         root.Add(UiCommand.Create());

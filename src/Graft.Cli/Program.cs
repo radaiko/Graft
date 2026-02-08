@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Graft.Cli.Commands;
 using Graft.Core.AutoUpdate;
 using Graft.Core.Git;
+using Graft.Core.Scan;
 using Graft.Core.Stack;
 
 var stateDir = Path.Combine(
@@ -61,6 +62,19 @@ if (args.Length == 0 || !string.Equals(args[0], "update", StringComparison.Ordin
     });
 }
 
+// 3. Spawn background repo scan (fire-and-forget)
+_ = Task.Run(async () =>
+{
+    try
+    {
+        await RepoScanner.ScanAndUpdateCacheAsync(stateDir);
+    }
+    catch
+    {
+        // Silently swallow — background scan must never crash the CLI
+    }
+});
+
 var root = new RootCommand("Graft — stacked branches and worktree management");
 
 // Stack commands (grouped)
@@ -71,6 +85,12 @@ root.Add(WorktreeCommand.Create());
 
 // Nuke command
 root.Add(NukeCommand.Create());
+
+// Scan command
+root.Add(ScanCommand.Create());
+
+// Navigation command
+root.Add(CdCommand.Create());
 
 // Setup commands
 root.Add(InstallCommand.Create());

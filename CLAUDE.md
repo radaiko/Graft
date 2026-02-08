@@ -143,7 +143,8 @@ graft ui                                               # Start web UI
 - `AutoUpdate/` — Update checking and binary replacement
 - `Install/` — Alias installer (`gt` symlink, `git gt` alias)
 - `Config/` — Configuration types, loading, and active stack persistence
-- `Scan/` — Repo scanner (background directory scanning, repo cache, scan path management)
+- `Scan/` — Repo scanner (background directory scanning, repo cache, scan path management, navigation)
+- `Tui/` — Terminal UI components (fuzzy matcher, interactive picker)
 - `Status/` — Cross-repo status aggregation (branch, ahead/behind, changed files, stacks, worktrees)
 
 ## Module Layout (Graft.Cli)
