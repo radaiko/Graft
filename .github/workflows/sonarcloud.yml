@@ -68,7 +68,7 @@ jobs:
             --no-build \
             --logger trx \
             --collect:"XPlat Code Coverage" \
-            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[Graft.Cli]*%2c[Graft.Core]*"
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[graft]*%2c[Graft.Core]*"
 
       - name: End analysis
         if: always()
