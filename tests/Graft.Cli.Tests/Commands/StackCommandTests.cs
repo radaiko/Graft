@@ -197,11 +197,33 @@ public sealed class StackCommandTests
         Assert.NotEmpty(result.Errors);
     }
 
+    // Requirement: `graft stack remove --force` parses correctly
+    [Fact]
+    public void StackRemove_WithForce_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("stack remove my-stack --force");
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void StackRemove_WithForceAlias_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("stack remove my-stack -f");
+        Assert.Empty(result.Errors);
+    }
+
     // Requirement: `graft stack rm <name>` (alias) parses correctly
     [Fact]
     public void StackRm_WithName_ParsesWithoutErrors()
     {
         var result = CliTestHelper.Parse("stack rm my-stack");
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void StackRm_WithForce_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("stack rm my-stack -f");
         Assert.Empty(result.Errors);
     }
 

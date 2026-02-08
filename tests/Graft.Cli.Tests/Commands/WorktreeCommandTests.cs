@@ -75,6 +75,20 @@ public sealed class WorktreeCommandTests
         Assert.Empty(result.Errors);
     }
 
+    [Fact]
+    public void WtRm_WithForce_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("wt rm feature-branch -f");
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void WtRm_WithForceLong_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("wt rm feature-branch --force");
+        Assert.Empty(result.Errors);
+    }
+
     // Requirement: `graft wt list` parses correctly
     [Fact]
     public void WtList_ParsesWithoutErrors()

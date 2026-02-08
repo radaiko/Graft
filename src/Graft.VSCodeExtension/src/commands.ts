@@ -209,7 +209,7 @@ export function registerCommands(
     }
   });
 
-  reg("graft.stackDel", async (...args: unknown[]) => {
+  reg("graft.stackRemove", async (...args: unknown[]) => {
     let name: string | undefined;
 
     if (args[0] instanceof StackItem) {
@@ -231,7 +231,7 @@ export function registerCommands(
     if (!confirm) return;
 
     try {
-      await cli.stackDel(name, cwd());
+      await cli.stackRemove(name, cwd());
       treeProvider.refreshImmediate();
       vscode.window.showInformationMessage(`Stack '${name}' deleted.`);
     } catch (e) {

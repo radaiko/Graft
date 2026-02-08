@@ -58,7 +58,7 @@ public static class WorktreeCommand
                 else
                 {
                     // No args: show help
-                    Console.Error.WriteLine("Usage: graft wt <branch> [-c] | graft wt remove <branch> [-f] | graft wt list");
+                    Console.Error.WriteLine("Usage: graft wt <branch> [--create/-c] | graft wt remove <branch> [--force/-f] | graft wt list");
                     Environment.ExitCode = 1;
                 }
             }
@@ -147,8 +147,15 @@ public static class WorktreeCommand
             return;
         }
 
-        if (!Console.IsInputRedirected)
+        if (!force)
         {
+            if (Console.IsInputRedirected)
+            {
+                Console.Error.WriteLine("Error: Cannot prompt for confirmation. Use --force to skip.");
+                Environment.ExitCode = 1;
+                return;
+            }
+
             Console.Write($"Remove worktree for '{branch}'? [y/N] ");
             var response = Console.ReadLine();
             if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))

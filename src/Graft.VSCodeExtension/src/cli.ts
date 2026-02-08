@@ -104,8 +104,8 @@ export class GraftCli {
     await this.run(args, cwd);
   }
 
-  async stackDel(name: string, cwd: string): Promise<void> {
-    await this.run(["stack", "remove", name], cwd);
+  async stackRemove(name: string, cwd: string): Promise<void> {
+    await this.run(["stack", "remove", "--force", name], cwd);
   }
 
   async continueOp(cwd: string): Promise<void> {

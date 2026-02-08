@@ -135,9 +135,9 @@ Stack: my-feature (trunk: main)
         └── feature/api (1 commit)
 ```
 
-### `graft stack remove <name>` (alias: `rm`)
+### `graft stack remove <name> [-f/--force]` (alias: `rm`)
 
-Remove a stack. Prompts for confirmation. Git branches are kept. If the removed stack was active, the active stack is cleared.
+Remove a stack. Prompts for confirmation unless `--force` is used. Git branches are kept. If the removed stack was active, the active stack is cleared.
 
 ```bash
 $ graft stack remove my-feature
@@ -282,7 +282,7 @@ Remove all worktrees, stacks, and gone branches.
 
 Remove all worktrees.
 
-### `graft nuke stack [-f/--force]`
+### `graft nuke stack`
 
 Remove all stacks. Git branches are kept.
 

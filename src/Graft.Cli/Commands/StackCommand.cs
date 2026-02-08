@@ -89,7 +89,7 @@ public static class StackCommand
         return command;
     }
 
-    private static async Task DoList(CancellationToken ct)
+    private static Task DoList(CancellationToken ct)
     {
         var repoPath = Directory.GetCurrentDirectory();
 
@@ -99,7 +99,7 @@ public static class StackCommand
             if (stacks.Length == 0)
             {
                 Console.WriteLine("No stacks found. Run 'graft stack init <name>' to create one.");
-                return;
+                return Task.CompletedTask;
             }
 
             var active = ConfigLoader.LoadActiveStack(repoPath);
@@ -114,6 +114,7 @@ public static class StackCommand
             Console.Error.WriteLine($"Error: {ex.Message}");
             Environment.ExitCode = 1;
         }
+        return Task.CompletedTask;
     }
 
     private static Command CreateSwitchCommand()
@@ -511,13 +512,17 @@ public static class StackCommand
     private static Command CreateRemoveCommand()
     {
         var nameArg = new Argument<string>("name") { Description = "Name of the stack to delete" };
+        var forceOption = new Option<bool>("--force") { Description = "Skip confirmation prompt" };
+        forceOption.Aliases.Add("-f");
         var command = new Command("remove", "Delete a stack. Branches are kept.");
         command.Add(nameArg);
+        command.Add(forceOption);
 
         command.SetAction((parseResult) =>
         {
             var name = parseResult.GetValue(nameArg)!;
-            DoRemove(name);
+            var force = parseResult.GetValue(forceOption);
+            DoRemove(name, force);
         });
 
         return command;
@@ -526,14 +531,18 @@ public static class StackCommand
     private static Command CreateRemoveAlias()
     {
         var nameArg = new Argument<string>("name") { Description = "Name of the stack to delete" };
+        var forceOption = new Option<bool>("--force") { Description = "Skip confirmation prompt" };
+        forceOption.Aliases.Add("-f");
         var command = new Command("rm", "Delete a stack. Branches are kept.");
         command.Hidden = true;
         command.Add(nameArg);
+        command.Add(forceOption);
 
         command.SetAction((parseResult) =>
         {
             var name = parseResult.GetValue(nameArg)!;
-            DoRemove(name);
+            var force = parseResult.GetValue(forceOption);
+            DoRemove(name, force);
         });
 
         return command;
@@ -542,21 +551,25 @@ public static class StackCommand
     private static Command CreateDelDeprecated()
     {
         var nameArg = new Argument<string>("name") { Description = "Name of the stack to delete" };
+        var forceOption = new Option<bool>("--force") { Description = "Skip confirmation prompt" };
+        forceOption.Aliases.Add("-f");
         var command = new Command("del", "Delete a stack. Branches are kept.");
         command.Hidden = true;
         command.Add(nameArg);
+        command.Add(forceOption);
 
         command.SetAction((parseResult) =>
         {
             Console.Error.WriteLine("Warning: 'graft stack del' is deprecated. Use 'graft stack remove' instead.");
             var name = parseResult.GetValue(nameArg)!;
-            DoRemove(name);
+            var force = parseResult.GetValue(forceOption);
+            DoRemove(name, force);
         });
 
         return command;
     }
 
-    private static void DoRemove(string name)
+    private static void DoRemove(string name, bool force)
     {
         var repoPath = Directory.GetCurrentDirectory();
 
@@ -569,8 +582,15 @@ public static class StackCommand
             return;
         }
 
-        if (!Console.IsInputRedirected)
+        if (!force)
         {
+            if (Console.IsInputRedirected)
+            {
+                Console.Error.WriteLine("Error: Cannot prompt for confirmation. Use --force to skip.");
+                Environment.ExitCode = 1;
+                return;
+            }
+
             Console.Write($"Delete stack '{name}'? Branches will be kept. [y/N] ");
             var response = Console.ReadLine();
             if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
