@@ -2,6 +2,7 @@
 layout: default
 title: Home
 nav_order: 1
+toc: true
 ---
 
 # Graft
@@ -18,6 +19,9 @@ main
 ```
 
 Each branch is its own PR. Each PR shows only its own changes. `graft stack sync` keeps them all up to date in one command.
+
+* TOC
+{:toc}
 
 ---
 
