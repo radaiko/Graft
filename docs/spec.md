@@ -162,6 +162,29 @@ On every `graft` invocation, a background thread scans all registered paths for 
 - **Stale removal**: If a previously cached repo no longer exists on disk, it is automatically removed from the cache.
 - **Worktree integration**: `graft wt` automatically adds new worktrees to the repo cache. `graft wt remove` automatically removes them.
 
+### Auto-Fetch
+
+Repos can opt into automatic background fetching. When enabled, `git fetch --all --quiet` runs in a fire-and-forget background thread on every `graft` invocation, rate-limited to once every 15 minutes per repo.
+
+#### `graft scan auto-fetch enable [<name>]`
+
+Enable auto-fetch for a repository. If `<name>` is provided, looks up the repo by name in the cache (case-insensitive). If omitted, uses the current working directory. Fails if the repo is not found in the cache.
+
+#### `graft scan auto-fetch disable [<name>]`
+
+Disable auto-fetch for a repository. Same name/path resolution as `enable`. Also clears the `last_fetched` timestamp.
+
+#### `graft scan auto-fetch list` (alias: `ls`)
+
+List all cached repos with their auto-fetch status (`on`/`off`) and last fetch time.
+
+#### Behavior Details
+
+- **Rate limiting**: Each repo tracks its own `last_fetched` UTC timestamp. A fetch is skipped if the repo was successfully fetched within the last 15 minutes.
+- **Error handling**: Fetch failures (network errors, unreachable remotes) are silently skipped per repo. One repo failing does not prevent others from being fetched.
+- **Non-blocking**: The auto-fetch runs in a background thread and never blocks the main CLI command.
+- **AOT-safe**: Uses `GitRunner` (process-based git CLI) — no reflection or dynamic loading.
+
 ---
 
 ## Navigation

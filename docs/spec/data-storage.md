@@ -163,7 +163,8 @@ Populated by background scanning. Updated automatically when worktrees are creat
 [[repos]]
 name = "Graft"
 path = "/Users/dev/projects/Graft"
-auto_fetch = false
+auto_fetch = true
+last_fetched = "2026-02-08T10:15:00Z"
 
 [[repos]]
 name = "Graft.wt.feature-api"
@@ -178,6 +179,7 @@ auto_fetch = false
 | `path` | string | yes | Absolute path to the repository |
 | `branch` | string | no | Branch name (present only for worktree entries, used for `graft cd` branch-name lookup) |
 | `auto_fetch` | boolean | no | Whether to run `git fetch --all` in the background (default: `false`) |
+| `last_fetched` | ISO 8601 datetime | no | When the last successful background fetch occurred (managed automatically) |
 
 ### `update-state.toml` — Auto-Update State
 

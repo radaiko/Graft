@@ -15,6 +15,7 @@ public sealed class CachedRepo
     /// </summary>
     public string? Branch { get; set; }
     public bool AutoFetch { get; set; }
+    public DateTime? LastFetched { get; set; }
 }
 
 public sealed class RepoCache

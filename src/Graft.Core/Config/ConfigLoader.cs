@@ -351,6 +351,8 @@ public static class ConfigLoader
                             repo.Branch = branch;
                         if (entry.TryGetValue("auto_fetch", out var afObj) && afObj is bool af)
                             repo.AutoFetch = af;
+                        if (entry.TryGetValue("last_fetched", out var lfObj) && lfObj is string lfStr)
+                            repo.LastFetched = DateTime.Parse(lfStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
                         cache.Repos.Add(repo);
                     }
                 }
@@ -384,6 +386,8 @@ public static class ConfigLoader
                 };
                 if (repo.Branch != null)
                     entry["branch"] = repo.Branch;
+                if (repo.LastFetched.HasValue)
+                    entry["last_fetched"] = repo.LastFetched.Value.ToString("O", CultureInfo.InvariantCulture);
                 arr.Add(entry);
             }
             table["repos"] = arr;
