@@ -8,6 +8,8 @@ namespace Graft.Cli.Commands;
 
 public static class StackCommand
 {
+    private const string BranchArgName = "branch";
+
     public static Command Create()
     {
         var command = new Command("stack", "Manage stacked branches");
@@ -166,7 +168,7 @@ public static class StackCommand
 
     private static Command CreatePushCommand()
     {
-        var branchArg = new Argument<string>("branch") { Description = "Branch name to add to the stack" };
+        var branchArg = new Argument<string>(BranchArgName) { Description = "Branch name to add to the stack" };
         var createOption = new Option<bool>("--create") { Description = "Create the branch if it doesn't exist" };
         createOption.Aliases.Add("-c");
         var command = new Command("push", "Add a branch to the top of the active stack");
@@ -225,7 +227,7 @@ public static class StackCommand
 
     private static Command CreateDropCommand()
     {
-        var branchArg = new Argument<string>("branch") { Description = "Branch to remove from the stack" };
+        var branchArg = new Argument<string>(BranchArgName) { Description = "Branch to remove from the stack" };
         var command = new Command("drop", "Remove a branch from the active stack (any position)");
         command.Add(branchArg);
 
@@ -251,7 +253,7 @@ public static class StackCommand
 
     private static Command CreateShiftCommand()
     {
-        var branchArg = new Argument<string>("branch") { Description = "Branch to insert at the bottom of the stack" };
+        var branchArg = new Argument<string>(BranchArgName) { Description = "Branch to insert at the bottom of the stack" };
         var command = new Command("shift", "Insert a branch at the bottom of the active stack");
         command.Add(branchArg);
 
@@ -336,7 +338,7 @@ public static class StackCommand
 
         if (!amend && string.IsNullOrWhiteSpace(message))
         {
-            Console.Error.WriteLine("Error: Commit message is required. Use --message '<message>' / -m '<message>' or --amend.");
+            await Console.Error.WriteLineAsync("Error: Commit message is required. Use --message '<message>' / -m '<message>' or --amend.");
             Environment.ExitCode = 1;
             return;
         }
@@ -353,20 +355,20 @@ public static class StackCommand
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("No staged changes"))
         {
-            Console.Error.WriteLine("Error: No staged changes to commit.");
-            Console.Error.WriteLine("Stage changes first with 'git add <file>'.");
+            await Console.Error.WriteLineAsync("Error: No staged changes to commit.");
+            await Console.Error.WriteLineAsync("Stage changes first with 'git add <file>'.");
             Environment.ExitCode = 1;
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Error: {ex.Message}");
             Environment.ExitCode = 1;
         }
     }
 
     private static Command CreateSyncCommand()
     {
-        var branchArg = new Argument<string?>("branch")
+        var branchArg = new Argument<string?>(BranchArgName)
         {
             Description = "Specific branch to sync (optional, syncs all if omitted)",
             Arity = ArgumentArity.ZeroOrOne,
@@ -433,79 +435,88 @@ public static class StackCommand
 
         command.SetAction(async (parseResult, ct) =>
         {
-            var repoPath = Directory.GetCurrentDirectory();
-
-            try
-            {
-                var stackName = ActiveStackManager.GetActiveStackName(repoPath);
-                var stack = ConfigLoader.LoadStack(stackName, repoPath);
-
-                var git = new GitRunner(repoPath, ct);
-                var headResult = await git.RunAsync("rev-parse", "--abbrev-ref", "HEAD");
-                var currentBranch = headResult.Success ? headResult.Stdout.Trim() : "";
-
-                Console.WriteLine(stack.Trunk);
-
-                if (stack.Branches.Count == 0)
-                {
-                    Console.WriteLine("  (no branches)");
-                    return;
-                }
-
-                Console.WriteLine("\u2502");
-
-                string parentBranch = stack.Trunk;
-                for (int i = 0; i < stack.Branches.Count; i++)
-                {
-                    var branch = stack.Branches[i];
-                    bool isLast = i == stack.Branches.Count - 1;
-
-                    var branchCheck = await git.RunAsync("rev-parse", "--verify", $"refs/heads/{branch.Name}");
-                    if (!branchCheck.Success)
-                    {
-                        var branchChar2 = isLast ? "\u2514" : "\u251c";
-                        Console.WriteLine($"{branchChar2}\u2500\u2500 {branch.Name} (branch missing!)");
-                        if (!isLast)
-                            Console.WriteLine("\u2502");
-                        parentBranch = branch.Name;
-                        continue;
-                    }
-
-                    var countResult = await git.RunAsync("rev-list", "--count", $"{parentBranch}..{branch.Name}");
-                    int commitCount = 0;
-                    if (countResult.Success && int.TryParse(countResult.Stdout.Trim(), out var cc))
-                        commitCount = cc;
-
-                    var commitStr = commitCount == 1 ? "1 commit" : $"{commitCount} commits";
-                    var headStr = currentBranch == branch.Name ? "  \u2190 HEAD" : "";
-
-                    var branchChar = isLast ? "\u2514" : "\u251c";
-                    Console.WriteLine($"{branchChar}\u2500\u2500 {branch.Name} ({commitStr}){headStr}");
-
-                    var logResult = await git.RunAsync("log", "--oneline", $"{parentBranch}..{branch.Name}");
-                    if (logResult.Success && !string.IsNullOrWhiteSpace(logResult.Stdout))
-                    {
-                        var prefix = isLast ? "    " : "\u2502   ";
-                        foreach (var line in logResult.Stdout.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)))
-                        {
-                            Console.WriteLine($"{prefix}{line.Trim()}");
-                        }
-                    }
-
-                    if (!isLast)
-                        Console.WriteLine("\u2502");
-
-                    parentBranch = branch.Name;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
+            await DoLog(ct);
         });
 
         return command;
+    }
+
+    private static async Task DoLog(CancellationToken ct)
+    {
+        var repoPath = Directory.GetCurrentDirectory();
+
+        try
+        {
+            var stackName = ActiveStackManager.GetActiveStackName(repoPath);
+            var stack = ConfigLoader.LoadStack(stackName, repoPath);
+
+            var git = new GitRunner(repoPath, ct);
+            var headResult = await git.RunAsync("rev-parse", "--abbrev-ref", "HEAD");
+            var currentBranch = headResult.Success ? headResult.Stdout.Trim() : "";
+
+            Console.WriteLine(stack.Trunk);
+
+            if (stack.Branches.Count == 0)
+            {
+                Console.WriteLine("  (no branches)");
+                return;
+            }
+
+            Console.WriteLine("\u2502");
+
+            string parentBranch = stack.Trunk;
+            for (int i = 0; i < stack.Branches.Count; i++)
+            {
+                var branch = stack.Branches[i];
+                bool isLast = i == stack.Branches.Count - 1;
+
+                await PrintBranchLog(git, branch, parentBranch, isLast, currentBranch);
+
+                parentBranch = branch.Name;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
+    }
+
+    private static async Task PrintBranchLog(GitRunner git, StackBranch branch, string parentBranch, bool isLast, string currentBranch)
+    {
+        var branchCheck = await git.RunAsync("rev-parse", "--verify", $"refs/heads/{branch.Name}");
+        if (!branchCheck.Success)
+        {
+            var branchChar2 = isLast ? "\u2514" : "\u251c";
+            Console.WriteLine($"{branchChar2}\u2500\u2500 {branch.Name} (branch missing!)");
+            if (!isLast)
+                Console.WriteLine("\u2502");
+            return;
+        }
+
+        var countResult = await git.RunAsync("rev-list", "--count", $"{parentBranch}..{branch.Name}");
+        int commitCount = 0;
+        if (countResult.Success && int.TryParse(countResult.Stdout.Trim(), out var cc))
+            commitCount = cc;
+
+        var commitStr = commitCount == 1 ? "1 commit" : $"{commitCount} commits";
+        var headStr = currentBranch == branch.Name ? "  \u2190 HEAD" : "";
+
+        var branchChar = isLast ? "\u2514" : "\u251c";
+        Console.WriteLine($"{branchChar}\u2500\u2500 {branch.Name} ({commitStr}){headStr}");
+
+        var logResult = await git.RunAsync("log", "--oneline", $"{parentBranch}..{branch.Name}");
+        if (logResult.Success && !string.IsNullOrWhiteSpace(logResult.Stdout))
+        {
+            var prefix = isLast ? "    " : "\u2502   ";
+            foreach (var line in logResult.Stdout.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)))
+            {
+                Console.WriteLine($"{prefix}{line.Trim()}");
+            }
+        }
+
+        if (!isLast)
+            Console.WriteLine("\u2502");
     }
 
     private static Command CreateRemoveCommand()

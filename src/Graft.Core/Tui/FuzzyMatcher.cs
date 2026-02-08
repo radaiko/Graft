@@ -35,7 +35,12 @@ public static class FuzzyMatcher
         if (patternIdx != pattern.Length)
             return null;
 
-        // Score the match
+        var score = CalculateScore(pattern, candidate, matchedIndices);
+        return new FuzzyMatch(score, matchedIndices);
+    }
+
+    private static int CalculateScore(string pattern, string candidate, List<int> matchedIndices)
+    {
         int score = 0;
         for (int i = 0; i < matchedIndices.Count; i++)
         {
@@ -60,7 +65,7 @@ public static class FuzzyMatcher
         // Penalty for unmatched candidate characters
         score -= (candidate.Length - matchedIndices.Count);
 
-        return new FuzzyMatch(score, matchedIndices);
+        return score;
     }
 
     /// <summary>

@@ -111,51 +111,63 @@ public static class ConfigLoader
 
         if (table.TryGetValue("branches", out var branchesObj) && branchesObj is TomlTableArray branches)
         {
-            foreach (TomlTable branchTable in branches)
-            {
-                if (branchTable["name"] is not string branchName)
-                    throw new InvalidOperationException($"Stack '{name}' has a branch entry without a valid 'name' field");
-
-                Validation.ValidateName(branchName, "Branch name");
-                var branch = new StackBranch { Name = branchName };
-                if (branchTable.TryGetValue("pr_number", out var prNum) &&
-                    branchTable.TryGetValue("pr_url", out var prUrl) &&
-                    prUrl is string prUrlStr)
-                {
-                    ulong prNumber;
-                    try
-                    {
-                        prNumber = Convert.ToUInt64(prNum, CultureInfo.InvariantCulture);
-                    }
-                    catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
-                    {
-                        throw new InvalidOperationException(
-                            $"Stack '{name}' branch '{branchName}' has invalid pr_number: expected an integer, got '{prNum}'", ex);
-                    }
-
-                    var prState = PrState.Open;
-                    if (branchTable.TryGetValue("pr_state", out var stateObj) && stateObj is string stateStr)
-                    {
-                        prState = stateStr switch
-                        {
-                            "merged" => PrState.Merged,
-                            "closed" => PrState.Closed,
-                            _ => PrState.Open,
-                        };
-                    }
-
-                    branch.Pr = new PullRequestRef
-                    {
-                        Number = prNumber,
-                        Url = prUrlStr,
-                        State = prState,
-                    };
-                }
-                stack.Branches.Add(branch);
-            }
+            stack.Branches.AddRange(ParseBranches(name, branches));
         }
 
         return stack;
+    }
+
+    /// <summary>
+    /// Parses a TomlTableArray of branch entries into a list of StackBranch objects.
+    /// </summary>
+    private static List<StackBranch> ParseBranches(string stackName, TomlTableArray branches)
+    {
+        var result = new List<StackBranch>();
+
+        foreach (TomlTable branchTable in branches)
+        {
+            if (branchTable["name"] is not string branchName)
+                throw new InvalidOperationException($"Stack '{stackName}' has a branch entry without a valid 'name' field");
+
+            Validation.ValidateName(branchName, "Branch name");
+            var branch = new StackBranch { Name = branchName };
+            if (branchTable.TryGetValue("pr_number", out var prNum) &&
+                branchTable.TryGetValue("pr_url", out var prUrl) &&
+                prUrl is string prUrlStr)
+            {
+                ulong prNumber;
+                try
+                {
+                    prNumber = Convert.ToUInt64(prNum, CultureInfo.InvariantCulture);
+                }
+                catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
+                {
+                    throw new InvalidOperationException(
+                        $"Stack '{stackName}' branch '{branchName}' has invalid pr_number: expected an integer, got '{prNum}'", ex);
+                }
+
+                var prState = PrState.Open;
+                if (branchTable.TryGetValue("pr_state", out var stateObj) && stateObj is string stateStr)
+                {
+                    prState = stateStr switch
+                    {
+                        "merged" => PrState.Merged,
+                        "closed" => PrState.Closed,
+                        _ => PrState.Open,
+                    };
+                }
+
+                branch.Pr = new PullRequestRef
+                {
+                    Number = prNumber,
+                    Url = prUrlStr,
+                    State = prState,
+                };
+            }
+            result.Add(branch);
+        }
+
+        return result;
     }
 
     public static void SaveStack(StackDefinition stack, string repoPath)
@@ -343,18 +355,9 @@ public static class ConfigLoader
             {
                 foreach (var entry in repos.OfType<TomlTable>())
                 {
-                    if (entry.TryGetValue("name", out var nameObj) && nameObj is string name &&
-                        entry.TryGetValue("path", out var pathObj) && pathObj is string path)
-                    {
-                        var repo = new CachedRepo { Name = name, Path = path };
-                        if (entry.TryGetValue("branch", out var branchObj) && branchObj is string branch)
-                            repo.Branch = branch;
-                        if (entry.TryGetValue("auto_fetch", out var afObj) && afObj is bool af)
-                            repo.AutoFetch = af;
-                        if (entry.TryGetValue("last_fetched", out var lfObj) && lfObj is string lfStr)
-                            repo.LastFetched = DateTime.Parse(lfStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+                    var repo = ParseCachedRepo(entry);
+                    if (repo != null)
                         cache.Repos.Add(repo);
-                    }
                 }
             }
 
@@ -365,6 +368,27 @@ public static class ConfigLoader
             throw new InvalidOperationException(
                 $"Failed to load repo cache from '{cachePath}'. The cache may be corrupt. Delete it and rerun to rebuild.", ex);
         }
+    }
+
+    /// <summary>
+    /// Parses a single TomlTable entry into a CachedRepo, or returns null if required fields are missing.
+    /// </summary>
+    private static CachedRepo? ParseCachedRepo(TomlTable entry)
+    {
+        if (entry.TryGetValue("name", out var nameObj) && nameObj is string name &&
+            entry.TryGetValue("path", out var pathObj) && pathObj is string path)
+        {
+            var repo = new CachedRepo { Name = name, Path = path };
+            if (entry.TryGetValue("branch", out var branchObj) && branchObj is string branch)
+                repo.Branch = branch;
+            if (entry.TryGetValue("auto_fetch", out var afObj) && afObj is bool af)
+                repo.AutoFetch = af;
+            if (entry.TryGetValue("last_fetched", out var lfObj) && lfObj is string lfStr)
+                repo.LastFetched = DateTime.Parse(lfStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            return repo;
+        }
+
+        return null;
     }
 
     public static void SaveRepoCache(RepoCache cache, string configDir)

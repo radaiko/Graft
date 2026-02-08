@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Graft.Core.Tui;
 
 public sealed class PickerItem<T>
@@ -25,7 +27,7 @@ public static class FuzzyPicker
         if (Console.IsInputRedirected || Console.IsErrorRedirected || items.Count == 0)
             return null;
 
-        var query = "";
+        var query = new StringBuilder();
         var selectedIndex = 0;
         var scrollOffset = 0;
         var filtered = new List<PickerItem<T>>(items);
@@ -37,60 +39,20 @@ public static class FuzzyPicker
 
         try
         {
-            renderedLines = Render(prompt, query, filtered, selectedIndex, scrollOffset, totalCount, renderedLines);
+            renderedLines = Render(prompt, query.ToString(), filtered, selectedIndex, scrollOffset, totalCount, renderedLines);
 
             while (true)
             {
                 var key = Console.ReadKey(intercept: true);
+                var result = ProcessInput(key, query, items, filtered, selectedIndex, scrollOffset);
+                filtered = result.Filtered;
+                selectedIndex = result.SelectedIndex;
+                scrollOffset = result.ScrollOffset;
 
-                switch (key.Key)
-                {
-                    case ConsoleKey.Escape:
-                        return null;
+                if (result.ShouldReturn)
+                    return result.ReturnValue;
 
-                    case ConsoleKey.Enter:
-                        if (filtered.Count > 0 && selectedIndex < filtered.Count)
-                            return filtered[selectedIndex].Value;
-                        return null;
-
-                    case ConsoleKey.UpArrow:
-                        if (selectedIndex > 0)
-                            selectedIndex--;
-                        break;
-
-                    case ConsoleKey.DownArrow:
-                        if (selectedIndex < filtered.Count - 1)
-                            selectedIndex++;
-                        break;
-
-                    case ConsoleKey.Backspace:
-                        if (query.Length > 0)
-                        {
-                            query = query[..^1];
-                            filtered = FilterItems(items, query);
-                            selectedIndex = 0;
-                            scrollOffset = 0;
-                        }
-                        break;
-
-                    default:
-                        if (key.KeyChar >= 32 && key.KeyChar < 127)
-                        {
-                            query += key.KeyChar;
-                            filtered = FilterItems(items, query);
-                            selectedIndex = 0;
-                            scrollOffset = 0;
-                        }
-                        break;
-                }
-
-                // Keep selection in viewport
-                if (selectedIndex < scrollOffset)
-                    scrollOffset = selectedIndex;
-                if (selectedIndex >= scrollOffset + MaxVisible)
-                    scrollOffset = selectedIndex - MaxVisible + 1;
-
-                renderedLines = Render(prompt, query, filtered, selectedIndex, scrollOffset, totalCount, renderedLines);
+                renderedLines = Render(prompt, query.ToString(), filtered, selectedIndex, scrollOffset, totalCount, renderedLines);
             }
         }
         finally
@@ -110,6 +72,59 @@ public static class FuzzyPicker
             return new List<PickerItem<T>>(items);
 
         return FuzzyMatcher.Filter(query, items, i => i.Label);
+    }
+
+    private static (List<PickerItem<T>> Filtered, int SelectedIndex, int ScrollOffset, bool ShouldReturn, T? ReturnValue)
+        ProcessInput<T>(ConsoleKeyInfo key, StringBuilder query, List<PickerItem<T>> items, List<PickerItem<T>> filtered, int selectedIndex, int scrollOffset) where T : class
+    {
+        switch (key.Key)
+        {
+            case ConsoleKey.Escape:
+                return (filtered, selectedIndex, scrollOffset, true, null);
+
+            case ConsoleKey.Enter:
+                if (filtered.Count > 0 && selectedIndex < filtered.Count)
+                    return (filtered, selectedIndex, scrollOffset, true, filtered[selectedIndex].Value);
+                return (filtered, selectedIndex, scrollOffset, true, null);
+
+            case ConsoleKey.UpArrow:
+                if (selectedIndex > 0)
+                    selectedIndex--;
+                break;
+
+            case ConsoleKey.DownArrow:
+                if (selectedIndex < filtered.Count - 1)
+                    selectedIndex++;
+                break;
+
+            case ConsoleKey.Backspace:
+                if (query.Length > 0)
+                {
+                    query.Length -= 1;
+                    filtered = FilterItems(items, query.ToString());
+                    selectedIndex = 0;
+                    scrollOffset = 0;
+                }
+                break;
+
+            default:
+                if (key.KeyChar >= 32 && key.KeyChar < 127)
+                {
+                    query.Append(key.KeyChar);
+                    filtered = FilterItems(items, query.ToString());
+                    selectedIndex = 0;
+                    scrollOffset = 0;
+                }
+                break;
+        }
+
+        // Keep selection in viewport
+        if (selectedIndex < scrollOffset)
+            scrollOffset = selectedIndex;
+        if (selectedIndex >= scrollOffset + MaxVisible)
+            scrollOffset = selectedIndex - MaxVisible + 1;
+
+        return (filtered, selectedIndex, scrollOffset, false, null);
     }
 
     /// <summary>
@@ -164,8 +179,7 @@ public static class FuzzyPicker
         }
 
         // Move back to prompt line
-        if (linesBelow > 0)
-            Err.Write($"\x1b[{linesBelow}A");
+        Err.Write($"\x1b[{linesBelow}A");
 
         // Position cursor at end of query text (1-based column)
         Err.Write($"\x1b[{prompt.Length + query.Length + 1}G");

@@ -34,25 +34,10 @@ public static class RepoScanner
 
         try
         {
-            // Check if this directory is a git repo (has .git dir or file)
-            var gitPath = Path.Combine(dir, ".git");
-            if (Directory.Exists(gitPath) || File.Exists(gitPath))
+            var repoEntry = TryCreateRepoEntry(dir);
+            if (repoEntry != null)
             {
-                var name = Path.GetFileName(dir);
-                var repo = new CachedRepo { Name = name, Path = dir };
-
-                if (File.Exists(gitPath))
-                {
-                    // .git is a file — this is a worktree
-                    repo.Branch = TryReadWorktreeBranch(dir);
-                }
-                else
-                {
-                    // Regular repo — read branch from .git/HEAD
-                    repo.Branch = TryReadRepoBranch(gitPath);
-                }
-
-                repos.Add(repo);
+                repos.Add(repoEntry);
                 // Don't recurse into git repos (submodules will be separate repos)
                 return;
             }
@@ -89,6 +74,33 @@ public static class RepoScanner
         {
             // Symlink loops, disconnected drives, etc.
         }
+    }
+
+    /// <summary>
+    /// Checks if a directory is a git repo and creates a CachedRepo entry if so.
+    /// Returns null if the directory is not a git repo.
+    /// </summary>
+    private static CachedRepo? TryCreateRepoEntry(string dir)
+    {
+        var gitPath = Path.Combine(dir, ".git");
+        if (!Directory.Exists(gitPath) && !File.Exists(gitPath))
+            return null;
+
+        var name = Path.GetFileName(dir);
+        var repo = new CachedRepo { Name = name, Path = dir };
+
+        if (File.Exists(gitPath))
+        {
+            // .git is a file — this is a worktree
+            repo.Branch = TryReadWorktreeBranch(dir);
+        }
+        else
+        {
+            // Regular repo — read branch from .git/HEAD
+            repo.Branch = TryReadRepoBranch(gitPath);
+        }
+
+        return repo;
     }
 
     private static string? TryReadRepoBranch(string gitDir)
@@ -161,12 +173,10 @@ public static class RepoScanner
             return;
 
         // Discover repos outside the lock (scanning is slow, cache mutation is fast)
-        var discovered = new List<CachedRepo>();
-        foreach (var sp in scanPaths)
-        {
-            if (Directory.Exists(sp.Path))
-                discovered.AddRange(ScanDirectory(sp.Path));
-        }
+        var discovered = scanPaths
+            .Where(sp => Directory.Exists(sp.Path))
+            .SelectMany(sp => ScanDirectory(sp.Path))
+            .ToList();
 
         // Lock during cache read-modify-write to prevent races with foreground commands
         ConfigLoader.WithCacheLock(configDir, () =>

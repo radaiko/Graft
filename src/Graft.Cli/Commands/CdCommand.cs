@@ -26,79 +26,11 @@ public static class CdCommand
             {
                 if (name != null)
                 {
-                    // Direct mode: find matches
-                    var matches = RepoNavigator.FindByName(name, configDir);
-
-                    if (matches.Count == 0)
-                    {
-                        Console.Error.WriteLine($"Error: No repo or worktree found matching '{name}'.");
-                        Console.Error.WriteLine("Run 'graft scan add <directory>' to register scan paths, then try again.");
-                        Environment.ExitCode = 1;
-                        return;
-                    }
-
-                    if (matches.Count == 1)
-                    {
-                        Console.WriteLine(matches[0].Path);
-                        return;
-                    }
-
-                    // Multiple matches — try interactive picker
-                    if (!Console.IsInputRedirected)
-                    {
-                        var items = matches.Select(m => new PickerItem<NavigationResult>
-                        {
-                            Value = m,
-                            Label = m.Name,
-                            Description = m.Branch != null ? $"[{m.Branch}]" : m.Path,
-                        }).ToList();
-
-                        var selected = FuzzyPicker.Pick(items, "Select: ");
-                        if (selected != null)
-                        {
-                            Console.WriteLine(selected.Path);
-                            return;
-                        }
-                    }
-
-                    // Non-interactive or cancelled: list matches on stderr
-                    Console.Error.WriteLine($"Multiple matches for '{name}':");
-                    foreach (var m in matches)
-                    {
-                        var detail = m.Branch != null ? $" [{m.Branch}]" : "";
-                        Console.Error.WriteLine($"  {m.Name}{detail}  {m.Path}");
-                    }
-                    Environment.ExitCode = 1;
+                    HandleDirectNavigation(name, configDir);
                 }
                 else
                 {
-                    // No args: open fuzzy picker with all repos
-                    var items = RepoNavigator.GetAllAsPickerItems(configDir);
-
-                    if (items.Count == 0)
-                    {
-                        Console.Error.WriteLine("No repos in cache. Run 'graft scan add <directory>' to register scan paths.");
-                        Environment.ExitCode = 1;
-                        return;
-                    }
-
-                    if (Console.IsInputRedirected)
-                    {
-                        Console.Error.WriteLine("Error: Interactive mode requires a terminal. Provide a name: graft cd <name>");
-                        Environment.ExitCode = 1;
-                        return;
-                    }
-
-                    var selected = FuzzyPicker.Pick(items, "Search: ");
-                    if (selected != null)
-                    {
-                        Console.WriteLine(selected.Path);
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine("No selection made. Provide a name: graft cd <name>");
-                        Environment.ExitCode = 1;
-                    }
+                    HandleInteractiveNavigation(configDir);
                 }
             }
             catch (Exception ex)
@@ -109,6 +41,82 @@ public static class CdCommand
         });
 
         return command;
+    }
+
+    private static void HandleDirectNavigation(string name, string configDir)
+    {
+        var matches = RepoNavigator.FindByName(name, configDir);
+
+        if (matches.Count == 0)
+        {
+            Console.Error.WriteLine($"Error: No repo or worktree found matching '{name}'.");
+            Console.Error.WriteLine("Run 'graft scan add <directory>' to register scan paths, then try again.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        if (matches.Count == 1)
+        {
+            Console.WriteLine(matches[0].Path);
+            return;
+        }
+
+        // Multiple matches — try interactive picker
+        if (!Console.IsInputRedirected)
+        {
+            var items = matches.Select(m => new PickerItem<NavigationResult>
+            {
+                Value = m,
+                Label = m.Name,
+                Description = m.Branch != null ? $"[{m.Branch}]" : m.Path,
+            }).ToList();
+
+            var selected = FuzzyPicker.Pick(items, "Select: ");
+            if (selected != null)
+            {
+                Console.WriteLine(selected.Path);
+                return;
+            }
+        }
+
+        // Non-interactive or cancelled: list matches on stderr
+        Console.Error.WriteLine($"Multiple matches for '{name}':");
+        foreach (var m in matches)
+        {
+            var detail = m.Branch != null ? $" [{m.Branch}]" : "";
+            Console.Error.WriteLine($"  {m.Name}{detail}  {m.Path}");
+        }
+        Environment.ExitCode = 1;
+    }
+
+    private static void HandleInteractiveNavigation(string configDir)
+    {
+        var items = RepoNavigator.GetAllAsPickerItems(configDir);
+
+        if (items.Count == 0)
+        {
+            Console.Error.WriteLine("No repos in cache. Run 'graft scan add <directory>' to register scan paths.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        if (Console.IsInputRedirected)
+        {
+            Console.Error.WriteLine("Error: Interactive mode requires a terminal. Provide a name: graft cd <name>");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        var selected = FuzzyPicker.Pick(items, "Search: ");
+        if (selected != null)
+        {
+            Console.WriteLine(selected.Path);
+        }
+        else
+        {
+            Console.Error.WriteLine("No selection made. Provide a name: graft cd <name>");
+            Environment.ExitCode = 1;
+        }
     }
 
 }

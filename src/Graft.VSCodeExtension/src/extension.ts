@@ -58,15 +58,11 @@ export async function activate(
   // Register commands
   registerCommands(context, cli, treeProvider, () => workspaceRoot);
 
-  // Update status bar after tree refreshes
+  // Update status bar after tree refreshes + invalidate cached CLI path on settings change
   context.subscriptions.push(
     treeProvider.onDidChangeTreeData(() => {
       setTimeout(updateStatusBar, 100);
-    })
-  );
-
-  // Invalidate cached CLI path on settings change
-  context.subscriptions.push(
+    }),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("graft.cliPath")) {
         cli.resetBinaryPath();

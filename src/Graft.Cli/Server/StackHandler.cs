@@ -10,6 +10,8 @@ namespace Graft.Cli.Server;
 
 public static class StackHandler
 {
+    private const string BranchNameLabel = "Branch name";
+
     public static async Task ListStacks(HttpListenerContext ctx, string repoPath)
     {
         var stacks = ConfigLoader.ListStacks(repoPath);
@@ -126,7 +128,7 @@ public static class StackHandler
                 return;
             }
 
-            Validation.ValidateName(req.BranchName, "Branch name");
+            Validation.ValidateName(req.BranchName, BranchNameLabel);
             await StackManager.PushAsync(req.BranchName, repoPath, req.CreateBranch, ct);
             var stackName = ActiveStackManager.GetActiveStackName(repoPath);
             await GetStack(ctx, stackName, repoPath, ct);
@@ -170,7 +172,7 @@ public static class StackHandler
             }
 
             if (req.Branch != null)
-                Validation.ValidateName(req.Branch, "Branch name");
+                Validation.ValidateName(req.Branch, BranchNameLabel);
 
             var options = new CommitOptions { Amend = req.Amend };
             var result = await CommitRouter.CommitAsync(req.Branch, req.Message, repoPath, options, ct);
@@ -262,7 +264,7 @@ public static class StackHandler
                 return;
             }
 
-            Validation.ValidateName(req.BranchName, "Branch name");
+            Validation.ValidateName(req.BranchName, BranchNameLabel);
             await StackManager.DropAsync(req.BranchName, repoPath, ct);
             ctx.Response.StatusCode = 204;
         }
@@ -283,7 +285,7 @@ public static class StackHandler
                 return;
             }
 
-            Validation.ValidateName(req.BranchName, "Branch name");
+            Validation.ValidateName(req.BranchName, BranchNameLabel);
             await StackManager.ShiftAsync(req.BranchName, repoPath, ct);
             ctx.Response.StatusCode = 204;
         }

@@ -6,7 +6,7 @@ import type { GraftState } from "./types.js";
 export class StackTreeProvider
   implements vscode.TreeDataProvider<vscode.TreeItem>
 {
-  private _onDidChangeTreeData = new vscode.EventEmitter<
+  private readonly _onDidChangeTreeData = new vscode.EventEmitter<
     vscode.TreeItem | undefined | void
   >();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;

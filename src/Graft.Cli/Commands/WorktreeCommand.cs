@@ -7,9 +7,11 @@ namespace Graft.Cli.Commands;
 
 public static class WorktreeCommand
 {
+    private const string BranchArgName = "branch";
+
     public static Command Create()
     {
-        var branchArg = new Argument<string?>("branch")
+        var branchArg = new Argument<string?>(BranchArgName)
         {
             Description = "Branch to create worktree for",
             Arity = ArgumentArity.ZeroOrOne,
@@ -74,7 +76,7 @@ public static class WorktreeCommand
 
     private static Command CreateRemoveCommand()
     {
-        var branchArg = new Argument<string>("branch") { Description = "Branch whose worktree to delete" };
+        var branchArg = new Argument<string>(BranchArgName) { Description = "Branch whose worktree to delete" };
         var forceOption = new Option<bool>("--force") { Description = "Override dirty checks" };
         forceOption.Aliases.Add("-f");
 
@@ -94,7 +96,7 @@ public static class WorktreeCommand
 
     private static Command CreateRemoveAlias()
     {
-        var branchArg = new Argument<string>("branch") { Description = "Branch whose worktree to delete" };
+        var branchArg = new Argument<string>(BranchArgName) { Description = "Branch whose worktree to delete" };
         var forceOption = new Option<bool>("--force") { Description = "Override dirty checks" };
         forceOption.Aliases.Add("-f");
 
@@ -115,7 +117,7 @@ public static class WorktreeCommand
 
     private static Command CreateDelDeprecated()
     {
-        var branchArg = new Argument<string>("branch") { Description = "Branch whose worktree to delete" };
+        var branchArg = new Argument<string>(BranchArgName) { Description = "Branch whose worktree to delete" };
         var forceOption = new Option<bool>("--force") { Description = "Override dirty checks" };
         forceOption.Aliases.Add("-f");
 
@@ -142,7 +144,7 @@ public static class WorktreeCommand
         var wtPath = WorktreeManager.GetWorktreePath(branch, repoPath);
         if (!Directory.Exists(wtPath))
         {
-            Console.Error.WriteLine($"Error: No worktree found for '{branch}'. Use 'graft wt list' to see existing worktrees.");
+            await Console.Error.WriteLineAsync($"Error: No worktree found for '{branch}'. Use 'graft wt list' to see existing worktrees.");
             Environment.ExitCode = 1;
             return;
         }
@@ -151,7 +153,7 @@ public static class WorktreeCommand
         {
             if (Console.IsInputRedirected)
             {
-                Console.Error.WriteLine("Error: Cannot prompt for confirmation. Use --force to skip.");
+                await Console.Error.WriteLineAsync("Error: Cannot prompt for confirmation. Use --force to skip.");
                 Environment.ExitCode = 1;
                 return;
             }
@@ -179,7 +181,7 @@ public static class WorktreeCommand
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Error: {ex.Message}");
             Environment.ExitCode = 1;
         }
     }
@@ -214,14 +216,14 @@ public static class WorktreeCommand
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Error: {ex.Message}");
             Environment.ExitCode = 1;
         }
     }
 
     private static Command CreateGotoCommand()
     {
-        var branchArg = new Argument<string>("branch") { Description = "Branch whose worktree to navigate to" };
+        var branchArg = new Argument<string>(BranchArgName) { Description = "Branch whose worktree to navigate to" };
 
         var command = new Command("goto", "Print worktree path for shell cd");
         command.Hidden = true;

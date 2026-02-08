@@ -2,8 +2,8 @@ import * as vscode from "vscode";
 import type { GraftState } from "./types.js";
 
 export class StatusBar {
-  private stackItem: vscode.StatusBarItem;
-  private syncItem: vscode.StatusBarItem;
+  private readonly stackItem: vscode.StatusBarItem;
+  private readonly syncItem: vscode.StatusBarItem;
 
   constructor() {
     this.stackItem = vscode.window.createStatusBarItem(

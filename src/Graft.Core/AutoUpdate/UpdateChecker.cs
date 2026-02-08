@@ -57,7 +57,6 @@ public static partial class UpdateChecker
 
         // Write pending update to state
         var stateDir = Path.GetDirectoryName(stagingDir)!;
-        var statePath = Path.Combine(stateDir, "update-state.toml");
 
         var state = ConfigLoader.LoadUpdateState(stateDir);
         state.LastChecked = DateTime.UtcNow;

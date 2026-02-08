@@ -5,6 +5,9 @@ namespace Graft.Core.Install;
 
 public static class AliasInstaller
 {
+    private const string Config = "config";
+    private const string AliasKey = "alias.gt";
+
     public static void Install(string binaryPath, string? gitconfigPath = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(binaryPath);
@@ -26,18 +29,8 @@ public static class AliasInstaller
             if (fi.LinkTarget != null && Path.GetFullPath(fi.LinkTarget) == Path.GetFullPath(binaryPath))
                 return; // Already installed
 
-            // Verify it's safe to delete: must be a symlink or a regular file
-            var attrs = File.GetAttributes(gtPath);
-            if ((attrs & FileAttributes.ReparsePoint) != 0)
-            {
-                // It's a symlink pointing elsewhere — safe to replace
-                File.Delete(gtPath);
-            }
-            else
-            {
-                // Regular file — remove and replace
-                File.Delete(gtPath);
-            }
+            // Safe to delete: it's either a symlink pointing elsewhere or a regular file
+            File.Delete(gtPath);
         }
 
         CreateLink(gtPath, binaryPath);
@@ -79,11 +72,11 @@ public static class AliasInstaller
     {
         if (gitconfigPath != null)
         {
-            RunGitConfig("config", "-f", gitconfigPath, "alias.gt", "!graft");
+            RunGitConfig(Config, "-f", gitconfigPath, AliasKey, "!graft");
         }
         else
         {
-            RunGitConfig("config", "--global", "alias.gt", "!graft");
+            RunGitConfig(Config, "--global", AliasKey, "!graft");
         }
     }
 
@@ -91,11 +84,11 @@ public static class AliasInstaller
     {
         if (gitconfigPath != null)
         {
-            RunGitConfig("config", "-f", gitconfigPath, "--unset", "alias.gt");
+            RunGitConfig(Config, "-f", gitconfigPath, "--unset", AliasKey);
         }
         else
         {
-            RunGitConfig("config", "--global", "--unset", "alias.gt");
+            RunGitConfig(Config, "--global", "--unset", AliasKey);
         }
     }
 
