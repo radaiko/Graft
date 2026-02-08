@@ -13,7 +13,7 @@ public sealed class ErrorHandlingTests
     public async Task Error_IncludesWhatWentWrong()
     {
         using var repo = TempCliRepo.CreateWithStack();
-        var cliResult = await CliTestHelper.RunAsync(repo.Path, "stack", "del", "nonexistent-stack");
+        var cliResult = await CliTestHelper.RunAsync(repo.Path, "stack", "remove", "nonexistent-stack");
 
         var combinedOutput = cliResult.Stdout + cliResult.Stderr;
         Assert.Contains("Error", combinedOutput, StringComparison.OrdinalIgnoreCase);
@@ -24,7 +24,7 @@ public sealed class ErrorHandlingTests
     public async Task Error_IncludesHowToFix()
     {
         using var repo = TempCliRepo.CreateWithStack();
-        var cliResult = await CliTestHelper.RunAsync(repo.Path, "stack", "del", "nonexistent-stack");
+        var cliResult = await CliTestHelper.RunAsync(repo.Path, "stack", "remove", "nonexistent-stack");
 
         var combinedOutput = cliResult.Stdout + cliResult.Stderr;
         // Error message should contain actionable guidance
@@ -70,7 +70,7 @@ public sealed class ErrorHandlingTests
     public async Task Error_ReturnsNonZeroExitCode()
     {
         using var repo = TempCliRepo.CreateWithStack();
-        var cliResult = await CliTestHelper.RunAsync(repo.Path, "stack", "del", "nonexistent-stack");
+        var cliResult = await CliTestHelper.RunAsync(repo.Path, "stack", "remove", "nonexistent-stack");
 
         Assert.NotEqual(0, cliResult.ExitCode);
     }

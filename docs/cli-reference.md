@@ -135,7 +135,7 @@ Stack: my-feature (trunk: main)
         └── feature/api (1 commit)
 ```
 
-### `graft stack remove <name> [-f/--force]` (alias: `rm`)
+### `graft stack remove <name>` (alias: `rm`)
 
 Remove a stack. Git branches are kept. If the removed stack was active, the active stack is cleared.
 
@@ -272,7 +272,7 @@ Show detailed status for a specific repo including stack graph and worktree list
 
 ## Nuke Commands
 
-Bulk cleanup operations. All require confirmation unless `-f` is used.
+Bulk cleanup operations. All require confirmation. Use `-f`/`--force` to override dirty checks on worktree removal.
 
 ### `graft nuke [-f/--force]`
 

@@ -137,7 +137,7 @@ public sealed class WorktreeManagerTests : IDisposable
     }
 
     // ========================
-    // graft wt del <branch>
+    // graft wt remove <branch>
     // ========================
 
     [Fact]

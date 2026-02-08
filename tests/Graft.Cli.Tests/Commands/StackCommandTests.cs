@@ -58,11 +58,27 @@ public sealed class StackCommandTests
         Assert.Empty(result.Errors);
     }
 
+    // Requirement: `graft stack ls` (alias) parses correctly
+    [Fact]
+    public void StackLs_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("stack ls");
+        Assert.Empty(result.Errors);
+    }
+
     // Requirement: `graft stack switch <name>` parses correctly
     [Fact]
     public void StackSwitch_WithName_ParsesWithoutErrors()
     {
         var result = CliTestHelper.Parse("stack switch my-stack");
+        Assert.Empty(result.Errors);
+    }
+
+    // Requirement: `graft stack sw <name>` (alias) parses correctly
+    [Fact]
+    public void StackSw_WithName_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("stack sw my-stack");
         Assert.Empty(result.Errors);
     }
 
@@ -120,10 +136,26 @@ public sealed class StackCommandTests
         Assert.Empty(result.Errors);
     }
 
+    // Requirement: `graft stack commit --message <msg>` parses correctly
+    [Fact]
+    public void StackCommit_WithMessageLong_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("stack commit --message \"test message\"");
+        Assert.Empty(result.Errors);
+    }
+
     [Fact]
     public void StackCommit_WithBranch_ParsesWithoutErrors()
     {
         var result = CliTestHelper.Parse("stack commit -m \"test\" -b feature-branch");
+        Assert.Empty(result.Errors);
+    }
+
+    // Requirement: `graft stack ci -m <msg>` (alias) parses correctly
+    [Fact]
+    public void StackCi_WithMessage_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("stack ci -m \"test message\"");
         Assert.Empty(result.Errors);
     }
 
@@ -150,19 +182,35 @@ public sealed class StackCommandTests
         Assert.Empty(result.Errors);
     }
 
-    // Requirement: `graft stack del <name>` parses correctly
+    // Requirement: `graft stack remove <name>` parses correctly
     [Fact]
-    public void StackDel_WithName_ParsesWithoutErrors()
+    public void StackRemove_WithName_ParsesWithoutErrors()
     {
-        var result = CliTestHelper.Parse("stack del my-stack");
+        var result = CliTestHelper.Parse("stack remove my-stack");
         Assert.Empty(result.Errors);
     }
 
     [Fact]
-    public void StackDel_WithoutName_HasParseError()
+    public void StackRemove_WithoutName_HasParseError()
     {
-        var result = CliTestHelper.Parse("stack del");
+        var result = CliTestHelper.Parse("stack remove");
         Assert.NotEmpty(result.Errors);
+    }
+
+    // Requirement: `graft stack rm <name>` (alias) parses correctly
+    [Fact]
+    public void StackRm_WithName_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("stack rm my-stack");
+        Assert.Empty(result.Errors);
+    }
+
+    // Requirement: `graft stack del` (deprecated alias) still parses
+    [Fact]
+    public void StackDel_Deprecated_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("stack del my-stack");
+        Assert.Empty(result.Errors);
     }
 
     // Requirement: Subcommands exist under stack
@@ -181,14 +229,19 @@ public sealed class StackCommandTests
 
         Assert.Contains("init", subcommands);
         Assert.Contains("list", subcommands);
+        Assert.Contains("ls", subcommands);
         Assert.Contains("switch", subcommands);
+        Assert.Contains("sw", subcommands);
         Assert.Contains("push", subcommands);
         Assert.Contains("pop", subcommands);
         Assert.Contains("drop", subcommands);
         Assert.Contains("shift", subcommands);
         Assert.Contains("commit", subcommands);
+        Assert.Contains("ci", subcommands);
         Assert.Contains("sync", subcommands);
         Assert.Contains("log", subcommands);
+        Assert.Contains("remove", subcommands);
+        Assert.Contains("rm", subcommands);
         Assert.Contains("del", subcommands);
     }
 }

@@ -14,15 +14,20 @@ public static class StackCommand
 
         command.Add(CreateInitCommand());
         command.Add(CreateListCommand());
+        command.Add(CreateListAlias());
         command.Add(CreateSwitchCommand());
+        command.Add(CreateSwitchAlias());
         command.Add(CreatePushCommand());
         command.Add(CreatePopCommand());
         command.Add(CreateDropCommand());
         command.Add(CreateShiftCommand());
         command.Add(CreateCommitCommand());
+        command.Add(CreateCommitAlias());
         command.Add(CreateSyncCommand());
         command.Add(CreateLogCommand());
-        command.Add(CreateDelCommand());
+        command.Add(CreateRemoveCommand());
+        command.Add(CreateRemoveAlias());
+        command.Add(CreateDelDeprecated());
 
         return command;
     }
@@ -50,7 +55,7 @@ public static class StackCommand
             catch (InvalidOperationException ex) when (ex.Message.Contains("already exists"))
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
-                Console.Error.WriteLine($"Use a different name, or delete the existing stack with 'graft stack del {name}'.");
+                Console.Error.WriteLine($"Use a different name, or delete the existing stack with 'graft stack remove {name}'.");
                 Environment.ExitCode = 1;
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("not a git repository"))
@@ -72,35 +77,43 @@ public static class StackCommand
     private static Command CreateListCommand()
     {
         var command = new Command("list", "List all stacks");
-
-        command.SetAction(async (parseResult, ct) =>
-        {
-            var repoPath = Directory.GetCurrentDirectory();
-
-            try
-            {
-                var stacks = ConfigLoader.ListStacks(repoPath);
-                if (stacks.Length == 0)
-                {
-                    Console.WriteLine("No stacks found. Run 'graft stack init <name>' to create one.");
-                    return;
-                }
-
-                var active = ConfigLoader.LoadActiveStack(repoPath);
-                foreach (var name in stacks)
-                {
-                    var marker = name == active ? "* " : "  ";
-                    Console.WriteLine($"{marker}{name}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
-        });
-
+        command.SetAction(async (parseResult, ct) => await DoList(ct));
         return command;
+    }
+
+    private static Command CreateListAlias()
+    {
+        var command = new Command("ls", "List all stacks");
+        command.Hidden = true;
+        command.SetAction(async (parseResult, ct) => await DoList(ct));
+        return command;
+    }
+
+    private static async Task DoList(CancellationToken ct)
+    {
+        var repoPath = Directory.GetCurrentDirectory();
+
+        try
+        {
+            var stacks = ConfigLoader.ListStacks(repoPath);
+            if (stacks.Length == 0)
+            {
+                Console.WriteLine("No stacks found. Run 'graft stack init <name>' to create one.");
+                return;
+            }
+
+            var active = ConfigLoader.LoadActiveStack(repoPath);
+            foreach (var name in stacks)
+            {
+                var marker = name == active ? "* " : "  ";
+                Console.WriteLine($"{marker}{name}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
     }
 
     private static Command CreateSwitchCommand()
@@ -108,30 +121,47 @@ public static class StackCommand
         var nameArg = new Argument<string>("name") { Description = "Stack to switch to" };
         var command = new Command("switch", "Switch active stack");
         command.Add(nameArg);
-
         command.SetAction((parseResult) =>
         {
             var name = parseResult.GetValue(nameArg)!;
-            var repoPath = Directory.GetCurrentDirectory();
-
-            try
-            {
-                ActiveStackManager.SetActiveStack(name, repoPath);
-                Console.WriteLine($"Switched to stack '{name}'");
-            }
-            catch (FileNotFoundException)
-            {
-                Console.Error.WriteLine($"Error: Stack '{name}' not found.");
-                Environment.ExitCode = 1;
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
+            DoSwitch(name);
         });
-
         return command;
+    }
+
+    private static Command CreateSwitchAlias()
+    {
+        var nameArg = new Argument<string>("name") { Description = "Stack to switch to" };
+        var command = new Command("sw", "Switch active stack");
+        command.Hidden = true;
+        command.Add(nameArg);
+        command.SetAction((parseResult) =>
+        {
+            var name = parseResult.GetValue(nameArg)!;
+            DoSwitch(name);
+        });
+        return command;
+    }
+
+    private static void DoSwitch(string name)
+    {
+        var repoPath = Directory.GetCurrentDirectory();
+
+        try
+        {
+            ActiveStackManager.SetActiveStack(name, repoPath);
+            Console.WriteLine($"Switched to stack '{name}'");
+        }
+        catch (FileNotFoundException)
+        {
+            Console.Error.WriteLine($"Error: Stack '{name}' not found.");
+            Environment.ExitCode = 1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
     }
 
     private static Command CreatePushCommand()
@@ -247,11 +277,12 @@ public static class StackCommand
 
     private static Command CreateCommitCommand()
     {
-        var messageOption = new Option<string?>("-m")
+        var messageOption = new Option<string?>("--message")
         {
             Description = "Commit message",
             Arity = ArgumentArity.ZeroOrOne,
         };
+        messageOption.Aliases.Add("-m");
         var branchOption = new Option<string?>("--branch") { Description = "Target branch (default: top of stack)" };
         branchOption.Aliases.Add("-b");
         var amendOption = new Option<bool>("--amend") { Description = "Amend the latest commit instead of creating a new one" };
@@ -265,39 +296,72 @@ public static class StackCommand
             var message = parseResult.GetValue(messageOption);
             var branch = parseResult.GetValue(branchOption);
             var amend = parseResult.GetValue(amendOption);
-            var repoPath = Directory.GetCurrentDirectory();
-
-            if (!amend && string.IsNullOrWhiteSpace(message))
-            {
-                Console.Error.WriteLine("Error: Commit message is required. Use -m '<message>' or --amend.");
-                Environment.ExitCode = 1;
-                return;
-            }
-
-            try
-            {
-                var options = new CommitOptions { Amend = amend };
-                var result = await CommitRouter.CommitAsync(branch, message ?? "", repoPath, options, ct);
-                Console.WriteLine($"Committed to {result.TargetBranch} ({result.CommitSha})");
-                if (result.BranchesAreStale)
-                {
-                    Console.WriteLine("Branches above are now stale. Run 'graft stack sync' to merge them.");
-                }
-            }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("No staged changes"))
-            {
-                Console.Error.WriteLine("Error: No staged changes to commit.");
-                Console.Error.WriteLine("Stage changes first with 'git add <file>'.");
-                Environment.ExitCode = 1;
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
+            await DoCommit(message, branch, amend, ct);
         });
 
         return command;
+    }
+
+    private static Command CreateCommitAlias()
+    {
+        var messageOption = new Option<string?>("--message")
+        {
+            Description = "Commit message",
+            Arity = ArgumentArity.ZeroOrOne,
+        };
+        messageOption.Aliases.Add("-m");
+        var branchOption = new Option<string?>("--branch") { Description = "Target branch (default: top of stack)" };
+        branchOption.Aliases.Add("-b");
+        var amendOption = new Option<bool>("--amend") { Description = "Amend the latest commit instead of creating a new one" };
+        var command = new Command("ci", "Commit staged changes to a branch in the active stack");
+        command.Hidden = true;
+        command.Add(messageOption);
+        command.Add(branchOption);
+        command.Add(amendOption);
+
+        command.SetAction(async (parseResult, ct) =>
+        {
+            var message = parseResult.GetValue(messageOption);
+            var branch = parseResult.GetValue(branchOption);
+            var amend = parseResult.GetValue(amendOption);
+            await DoCommit(message, branch, amend, ct);
+        });
+
+        return command;
+    }
+
+    private static async Task DoCommit(string? message, string? branch, bool amend, CancellationToken ct)
+    {
+        var repoPath = Directory.GetCurrentDirectory();
+
+        if (!amend && string.IsNullOrWhiteSpace(message))
+        {
+            Console.Error.WriteLine("Error: Commit message is required. Use --message '<message>' / -m '<message>' or --amend.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        try
+        {
+            var options = new CommitOptions { Amend = amend };
+            var result = await CommitRouter.CommitAsync(branch, message ?? "", repoPath, options, ct);
+            Console.WriteLine($"Committed to {result.TargetBranch} ({result.CommitSha})");
+            if (result.BranchesAreStale)
+            {
+                Console.WriteLine("Branches above are now stale. Run 'graft stack sync' to merge them.");
+            }
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("No staged changes"))
+        {
+            Console.Error.WriteLine("Error: No staged changes to commit.");
+            Console.Error.WriteLine("Stage changes first with 'git add <file>'.");
+            Environment.ExitCode = 1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
     }
 
     private static Command CreateSyncCommand()
@@ -444,46 +508,84 @@ public static class StackCommand
         return command;
     }
 
-    private static Command CreateDelCommand()
+    private static Command CreateRemoveCommand()
     {
         var nameArg = new Argument<string>("name") { Description = "Name of the stack to delete" };
-        var command = new Command("del", "Delete a stack. Branches are kept.");
+        var command = new Command("remove", "Delete a stack. Branches are kept.");
         command.Add(nameArg);
 
         command.SetAction((parseResult) =>
         {
             var name = parseResult.GetValue(nameArg)!;
-            var repoPath = Directory.GetCurrentDirectory();
-
-            // Validate stack exists before prompting
-            var stacks = ConfigLoader.ListStacks(repoPath);
-            if (!stacks.Contains(name))
-            {
-                Console.Error.WriteLine($"Error: Stack '{name}' not found. Use 'graft stack list' to see available stacks.");
-                Environment.ExitCode = 1;
-                return;
-            }
-
-            Console.Write($"Delete stack '{name}'? Branches will be kept. [y/N] ");
-            var response = Console.ReadLine();
-            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.WriteLine("Aborted.");
-                return;
-            }
-
-            try
-            {
-                StackManager.Delete(name, repoPath);
-                Console.WriteLine($"Deleted stack '{name}'. Branches are kept.");
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
+            DoRemove(name);
         });
 
         return command;
+    }
+
+    private static Command CreateRemoveAlias()
+    {
+        var nameArg = new Argument<string>("name") { Description = "Name of the stack to delete" };
+        var command = new Command("rm", "Delete a stack. Branches are kept.");
+        command.Hidden = true;
+        command.Add(nameArg);
+
+        command.SetAction((parseResult) =>
+        {
+            var name = parseResult.GetValue(nameArg)!;
+            DoRemove(name);
+        });
+
+        return command;
+    }
+
+    private static Command CreateDelDeprecated()
+    {
+        var nameArg = new Argument<string>("name") { Description = "Name of the stack to delete" };
+        var command = new Command("del", "Delete a stack. Branches are kept.");
+        command.Hidden = true;
+        command.Add(nameArg);
+
+        command.SetAction((parseResult) =>
+        {
+            Console.Error.WriteLine("Warning: 'graft stack del' is deprecated. Use 'graft stack remove' instead.");
+            var name = parseResult.GetValue(nameArg)!;
+            DoRemove(name);
+        });
+
+        return command;
+    }
+
+    private static void DoRemove(string name)
+    {
+        var repoPath = Directory.GetCurrentDirectory();
+
+        // Validate stack exists before prompting
+        var stacks = ConfigLoader.ListStacks(repoPath);
+        if (!stacks.Contains(name))
+        {
+            Console.Error.WriteLine($"Error: Stack '{name}' not found. Use 'graft stack list' to see available stacks.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        Console.Write($"Delete stack '{name}'? Branches will be kept. [y/N] ");
+        var response = Console.ReadLine();
+        if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Aborted.");
+            return;
+        }
+
+        try
+        {
+            StackManager.Delete(name, repoPath);
+            Console.WriteLine($"Deleted stack '{name}'. Branches are kept.");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
     }
 }

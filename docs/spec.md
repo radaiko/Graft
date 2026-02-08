@@ -107,9 +107,9 @@ Sync only the named branch. Determines the correct parent (trunk if it's the fir
 
 Show a visual graph of the active stack with commit counts and sync status.
 
-### `graft stack remove <name>` (alias: `rm`) / `--force` / `-f`
+### `graft stack remove <name>` (alias: `rm`)
 
-Delete a stack by name. The git branches are kept. If the deleted stack was active, the active-stack file is cleared.
+Delete a stack by name. The git branches are kept. If the deleted stack was active, the active-stack file is cleared. Always prompts for confirmation.
 
 ---
 
@@ -125,13 +125,9 @@ Create a worktree from an existing branch. Automatically adds the worktree to th
 
 Create a new git branch and a worktree for it. Fails if the branch already exists. Automatically adds the worktree to the repo cache.
 
-### `graft wt remove <branch>` (alias: `rm`)
+### `graft wt remove <branch>` (alias: `rm`) / `--force` / `-f`
 
-Delete the worktree for the named branch. Fails if the worktree has uncommitted changes. Also removes the worktree from the repo cache (see [Scan Commands](#scan-commands)).
-
-### `graft wt remove <branch> --force` / `-f`
-
-Force-delete the worktree even if it has uncommitted changes.
+Delete the worktree for the named branch. Always prompts for confirmation. Fails if the worktree has uncommitted changes unless `--force` is used to override dirty checks. Also removes the worktree from the repo cache (see [Scan Commands](#scan-commands)).
 
 ### `graft wt list` (alias: `ls`)
 

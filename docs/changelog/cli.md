@@ -11,15 +11,7 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ---
 
-## [Unreleased]
-
-### Added
-- **Core:** Auto-fetch — background `git fetch --all` for repos with auto-fetch enabled, rate-limited to 15-minute intervals per repo (#19)
-- **CLI:** `graft scan auto-fetch enable [<name>]` — enable auto-fetch for a repo (by name or current directory)
-- **CLI:** `graft scan auto-fetch disable [<name>]` — disable auto-fetch for a repo
-- **CLI:** `graft scan auto-fetch list` — list all repos with their auto-fetch status and last fetch time
-
-## [0.3.0]
+## [0.3.0] -- Unreleased
 
 ### Added
 - **Core:** Repo scanner — register directories for automatic git repo discovery (`graft scan add/remove/list`) (#18)
@@ -30,8 +22,20 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 - **CLI:** Worktree create/remove now automatically updates the repo cache for `graft cd`
 - **CLI:** `graft status` — cross-repo status overview (branch, ahead/behind, changed files, stacks, worktrees) (#20)
 - **CLI:** `graft status <reponame>` — detailed status for a single repo with stack branch graph (#20)
+- **Core:** Auto-fetch — background `git fetch --all` for repos with auto-fetch enabled, rate-limited to 15-minute intervals per repo (#19)
+- **CLI:** `graft scan auto-fetch enable [<name>]` — enable auto-fetch for a repo (by name or current directory)
+- **CLI:** `graft scan auto-fetch disable [<name>]` — disable auto-fetch for a repo
+- **CLI:** `graft scan auto-fetch list` — list all repos with their auto-fetch status and last fetch time
+
+### Changed
+- **CLI:** Renamed `graft stack del` → `graft stack remove` with hidden `rm` alias
+- **CLI:** Renamed `graft wt del` → `graft wt remove` with hidden `rm` alias
+- **CLI:** Added hidden short aliases: `stack ls`, `stack sw`, `stack ci`, `wt ls`
+- **CLI:** `graft stack commit` now accepts `--message`/`-m` (previously `-m` only)
 
 ### Deprecated
+- **CLI:** `graft stack del` — use `graft stack remove` instead (command is now hidden, prints deprecation warning)
+- **CLI:** `graft wt del` — use `graft wt remove` instead (command is now hidden, prints deprecation warning)
 - **CLI:** `graft wt goto` — use `graft cd` instead (command is now hidden, prints deprecation warning)
 
 ## [0.2.2]
