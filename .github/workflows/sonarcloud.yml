@@ -42,7 +42,8 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" \
             /d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx" \
-            /d:sonar.exclusions="**/wwwroot/**,**/bin/**,**/obj/**,**/frontend/node_modules/**"
+            /d:sonar.exclusions="**/wwwroot/**,**/bin/**,**/obj/**,**/frontend/node_modules/**,.github/**" \
+            /d:sonar.test.inclusions="tests/**"
 
       - name: Build
         run: |

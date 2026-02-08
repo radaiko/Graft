@@ -1,4 +1,5 @@
 using Graft.Core.AutoUpdate;
+using Graft.Core.Config;
 
 namespace Graft.Core.Tests.AutoUpdate;
 
@@ -285,6 +286,59 @@ public sealed class AutoUpdateTests
         var result = new byte[extracted.Length];
         extracted.Read(result, 0, result.Length);
         Assert.Equal(binaryContent, result);
+    }
+
+    // Coverage: exercises ApplyPendingUpdateAsync including File.Delete backup catch blocks
+    [Fact]
+    public async Task ApplyPendingUpdate_ValidBinary_ReplacesCurrentAndClearsState()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"graft-test-{Guid.NewGuid():N}");
+        var stagingDir = Path.Combine(tempDir, "staging");
+        Directory.CreateDirectory(stagingDir);
+        try
+        {
+            // Create a "current binary" file
+            var currentBinaryPath = Path.Combine(tempDir, "graft-current");
+            File.WriteAllText(currentBinaryPath, "old binary");
+
+            // Create a staged binary
+            var stagedContent = "new binary content"u8.ToArray();
+            var stagedPath = Path.Combine(stagingDir, "graft-1.0.0");
+            File.WriteAllBytes(stagedPath, stagedContent);
+
+            // Compute its checksum
+            var checksum = await UpdateChecker.ComputeChecksumAsync(stagedPath);
+
+            // Write update state with pending update
+            var state = new UpdateState
+            {
+                LastChecked = DateTime.UtcNow,
+                CurrentVersion = "0.9.0",
+                PendingUpdate = new PendingUpdate
+                {
+                    Version = "1.0.0",
+                    BinaryPath = stagedPath,
+                    Checksum = checksum,
+                    DownloadedAt = DateTime.UtcNow,
+                },
+            };
+            UpdateChecker.SaveUpdateState(state, tempDir);
+
+            // Apply the update
+            var applied = await UpdateApplier.ApplyPendingUpdateAsync(tempDir, currentBinaryPath);
+
+            Assert.True(applied);
+            Assert.Equal(stagedContent, File.ReadAllBytes(currentBinaryPath));
+
+            // Verify pending update was cleared
+            var newState = ConfigLoader.LoadUpdateState(tempDir);
+            Assert.Null(newState.PendingUpdate);
+            Assert.Equal("1.0.0", newState.CurrentVersion);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
     }
 
     private static async Task<string> WriteTempFile(string dir, byte[] content)
