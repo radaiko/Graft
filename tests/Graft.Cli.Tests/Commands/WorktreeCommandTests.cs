@@ -4,8 +4,8 @@ namespace Graft.Cli.Tests.Commands;
 
 /// <summary>
 /// Tests for `graft wt` command.
-/// Structure: `graft wt <branch> [-c]`, `graft wt del <branch> [-f]`,
-/// `graft wt list`, `graft wt goto <branch>`
+/// Structure: `graft wt <branch> [-c]`, `graft wt remove <branch> [-f]`,
+/// `graft wt list`
 /// </summary>
 public sealed class WorktreeCommandTests
 {
@@ -45,18 +45,47 @@ public sealed class WorktreeCommandTests
         Assert.Empty(result.Errors);
     }
 
-    // Requirement: `graft wt del <branch>` parses correctly
+    // Requirement: `graft wt remove <branch>` parses correctly
     [Fact]
-    public void WtDel_WithBranch_ParsesWithoutErrors()
+    public void WtRemove_WithBranch_ParsesWithoutErrors()
     {
-        var result = CliTestHelper.Parse("wt del feature-branch");
+        var result = CliTestHelper.Parse("wt remove feature-branch");
         Assert.Empty(result.Errors);
     }
 
     [Fact]
-    public void WtDel_WithForce_ParsesWithoutErrors()
+    public void WtRemove_WithForce_ParsesWithoutErrors()
     {
-        var result = CliTestHelper.Parse("wt del feature-branch -f");
+        var result = CliTestHelper.Parse("wt remove feature-branch -f");
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void WtRemove_WithForceLong_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("wt remove feature-branch --force");
+        Assert.Empty(result.Errors);
+    }
+
+    // Requirement: `graft wt rm <branch>` (alias) parses correctly
+    [Fact]
+    public void WtRm_WithBranch_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("wt rm feature-branch");
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void WtRm_WithForce_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("wt rm feature-branch -f");
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void WtRm_WithForceLong_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("wt rm feature-branch --force");
         Assert.Empty(result.Errors);
     }
 
@@ -68,11 +97,27 @@ public sealed class WorktreeCommandTests
         Assert.Empty(result.Errors);
     }
 
-    // Requirement: `graft wt goto <branch>` parses correctly
+    // Requirement: `graft wt ls` (alias) parses correctly
+    [Fact]
+    public void WtLs_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("wt ls");
+        Assert.Empty(result.Errors);
+    }
+
+    // Requirement: `graft wt goto <branch>` parses correctly (deprecated but still works)
     [Fact]
     public void WtGoto_WithBranch_ParsesWithoutErrors()
     {
         var result = CliTestHelper.Parse("wt goto feature-branch");
+        Assert.Empty(result.Errors);
+    }
+
+    // Requirement: `graft wt del` (deprecated alias) still parses
+    [Fact]
+    public void WtDel_Deprecated_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("wt del feature-branch");
         Assert.Empty(result.Errors);
     }
 
@@ -90,7 +135,10 @@ public sealed class WorktreeCommandTests
             .Select(c => c.Name)
             .ToList();
 
+        Assert.Contains("remove", subcommands);
+        Assert.Contains("rm", subcommands);
         Assert.Contains("list", subcommands);
+        Assert.Contains("ls", subcommands);
         Assert.Contains("del", subcommands);
         Assert.Contains("goto", subcommands);
     }

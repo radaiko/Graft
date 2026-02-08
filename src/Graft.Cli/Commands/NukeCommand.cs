@@ -64,13 +64,10 @@ public static class NukeCommand
 
     private static Command CreateStackCommand()
     {
-        var forceOption = CreateForceOption("Override dirty checks");
         var command = new Command("stack", "Remove all stacks");
-        command.Add(forceOption);
 
         command.SetAction(async (parseResult, ct) =>
         {
-            var force = parseResult.GetValue(forceOption);
             var repoPath = Directory.GetCurrentDirectory();
 
             Console.Write("This will remove all stacks. Continue? [y/N] ");
@@ -81,7 +78,7 @@ public static class NukeCommand
                 return;
             }
 
-            var result = await NukeManager.NukeStacksAsync(repoPath, force, ct);
+            var result = await NukeManager.NukeStacksAsync(repoPath, ct: ct);
             PrintResult(result);
         });
 

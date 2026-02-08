@@ -209,7 +209,7 @@ export function registerCommands(
     }
   });
 
-  reg("graft.stackDel", async (...args: unknown[]) => {
+  reg("graft.stackRemove", async (...args: unknown[]) => {
     let name: string | undefined;
 
     if (args[0] instanceof StackItem) {
@@ -224,15 +224,14 @@ export function registerCommands(
     if (!name) return;
 
     const confirm = await vscode.window.showWarningMessage(
-      `Delete stack '${name}'?`,
+      `Delete stack '${name}'? Branches will be kept.`,
       { modal: true },
-      "Delete",
-      "Force Delete"
+      "Delete"
     );
     if (!confirm) return;
 
     try {
-      await cli.stackDel(name, cwd(), confirm === "Force Delete");
+      await cli.stackRemove(name, cwd());
       treeProvider.refreshImmediate();
       vscode.window.showInformationMessage(`Stack '${name}' deleted.`);
     } catch (e) {

@@ -137,7 +137,7 @@ Stack: my-feature (trunk: main)
 
 ### `graft stack remove <name> [-f/--force]` (alias: `rm`)
 
-Remove a stack. Git branches are kept. If the removed stack was active, the active stack is cleared.
+Remove a stack. Prompts for confirmation unless `--force` is used. Git branches are kept. If the removed stack was active, the active stack is cleared.
 
 ```bash
 $ graft stack remove my-feature
@@ -169,7 +169,7 @@ Created worktree at ../Graft.wt.feature-new-thing/
 
 ### `graft wt remove <branch> [-f/--force]` (alias: `rm`)
 
-Remove the worktree for the named branch. Fails if uncommitted changes exist unless `-f` is used. Also removes the worktree from the repo cache.
+Remove the worktree for the named branch. Prompts for confirmation. Fails if uncommitted changes exist unless `-f` is used to override dirty checks. Also removes the worktree from the repo cache.
 
 ```bash
 $ graft wt remove feature/auth
@@ -272,7 +272,7 @@ Show detailed status for a specific repo including stack graph and worktree list
 
 ## Nuke Commands
 
-Bulk cleanup operations. All require confirmation unless `-f` is used.
+Bulk cleanup operations. All require confirmation. Use `-f`/`--force` to override dirty checks on worktree removal.
 
 ### `graft nuke [-f/--force]`
 
@@ -282,7 +282,7 @@ Remove all worktrees, stacks, and gone branches.
 
 Remove all worktrees.
 
-### `graft nuke stack [-f/--force]`
+### `graft nuke stack`
 
 Remove all stacks. Git branches are kept.
 

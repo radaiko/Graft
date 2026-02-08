@@ -87,8 +87,8 @@
         "category": "Graft"
       },
       {
-        "command": "graft.stackDel",
-        "title": "Delete Stack",
+        "command": "graft.stackRemove",
+        "title": "Remove Stack",
         "category": "Graft"
       },
       {
@@ -163,7 +163,7 @@
           "group": "1_stack@4"
         },
         {
-          "command": "graft.stackDel",
+          "command": "graft.stackRemove",
           "when": "view == graftStacks && viewItem =~ /^graft\\.stack/",
           "group": "2_danger@1"
         },

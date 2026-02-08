@@ -89,7 +89,7 @@ Commands use **full names** as primary, with **short aliases** registered as hid
 | Commit | `commit` | `ci` |
 | Status | `status` | `st` |
 
-Options always have a long form primary with a short alias: `--force`/`-f`, `--create`/`-c`, `--message`/`-m`, `--base`/`-b`, `--branch`/`-b`. All destructive commands support `--force`/`-f` to skip confirmation.
+Options always have a long form primary with a short alias: `--force`/`-f`, `--create`/`-c`, `--message`/`-m`, `--base`/`-b`, `--branch`/`-b`. `--force` only overrides dirty checks, never skips confirmation prompts. All destructive commands always prompt for confirmation.
 
 ## CLI Command Structure
 
@@ -106,7 +106,7 @@ graft stack shift <branch>                             # Insert branch at bottom
 graft stack commit (ci) -m/--message '<msg>' [-b <branch>]  # Commit to stack branch
 graft stack sync [<branch>]                            # Merge parent + push stack branches
 graft stack log                                        # Show stack branch graph
-graft stack remove (rm) <name> [-f/--force]            # Delete a stack
+graft stack remove (rm) <name> [-f/--force]              # Delete a stack
 
 graft wt <branch>                                      # Create worktree for existing branch
 graft wt <branch> -c/--create                          # Create new branch + worktree
@@ -126,7 +126,7 @@ graft status (st) <reponame>                           # Detailed status for one
 
 graft nuke [-f/--force]                                # Remove all graft resources
 graft nuke wt [-f/--force]                             # Remove all worktrees
-graft nuke stack [-f/--force]                          # Remove all stacks
+graft nuke stack                                       # Remove all stacks
 graft nuke branches                                    # Remove branches whose upstream is gone
 
 graft --continue                                       # Continue after conflict resolution

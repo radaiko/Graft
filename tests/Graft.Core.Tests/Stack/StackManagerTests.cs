@@ -544,7 +544,7 @@ public sealed class StackManagerTests : IDisposable
     }
 
     // ========================
-    // graft stack del <name>
+    // graft stack remove <name>
     // ========================
 
     [Fact]
