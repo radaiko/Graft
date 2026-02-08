@@ -133,7 +133,7 @@ Graft tracks which stack is "active." All stack commands (`push`, `pop`, `drop`,
 - **Auto-set on init**: `graft stack init <name>` activates the new stack
 - **Auto-select**: If exactly one stack exists, it's used automatically
 - **Switch**: `graft stack switch <name>`
-- **Cleared on delete**: Deleting the active stack clears the setting
+- **Cleared on remove**: Removing the active stack clears the setting
 
 ```bash
 $ graft stack list
@@ -174,14 +174,14 @@ $ gt wt list
 /Users/dev/Graft.wt.feature-api       feature/api
 
 # Jump to a worktree
-$ cd $(gt wt goto feature/auth)
+$ graft cd feature/auth
 ```
 
 Remove worktrees:
 
 ```bash
-gt wt del feature/auth         # fails if uncommitted changes
-gt wt del feature/auth -f      # force-remove
+gt wt remove feature/auth         # fails if uncommitted changes
+gt wt remove feature/auth -f      # force-remove
 ```
 
 Worktrees are useful when working on multiple stack branches at the same time without switching.

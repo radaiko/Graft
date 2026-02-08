@@ -9,7 +9,7 @@ Graft is a cross-platform CLI tool (C# / .NET 10 / Native AOT) for managing stac
 Solution file at `src/Graft.sln`. Shared build properties in `Directory.Build.props` at repo root.
 
 - `src/Graft.Core/` — Core library. Stack management, worktree management, commit routing, nuke operations, git abstraction. No CLI dependencies. Marked `IsAotCompatible`.
-- `src/Graft.Cli/` — CLI binary (`graft`). Uses System.CommandLine. Grouped commands: `stack` (init, ls, sw, push, pop, drop, shift, commit, sync, log, rm), `wt` (add, ls, delete), `nuke` (wt, stack, branches). Setup: `install`, `uninstall`, `update`, `version`. `ui` for web interface. Includes web UI: `Server/` (HTTP API), `Json/` (DTOs), `frontend/` (Svelte SPA, built to `wwwroot/` and embedded as assembly resources). Published with `PublishAot=true`.
+- `src/Graft.Cli/` — CLI binary (`graft`). Uses System.CommandLine. Grouped commands: `stack` (init, list, switch, push, pop, drop, shift, commit, sync, log, remove), `wt` (add, remove, list), `scan` (add, remove, list), `nuke` (wt, stack, branches). Top-level: `cd`, `status`, `install`, `uninstall`, `update`, `version`, `ui`. Includes web UI: `Server/` (HTTP API), `Json/` (DTOs), `frontend/` (Svelte SPA, built to `wwwroot/` and embedded as assembly resources). Published with `PublishAot=true`.
 - `src/Graft.VSCodeExtension/` — VS Code extension (planned).
 - `src/Graft.VS2026Extension/` — Visual Studio 2026 extension (planned).
 - `tests/Graft.Core.Tests/` — Unit tests for core library (xUnit).
@@ -32,6 +32,9 @@ Releases are published to this repo's [GitHub Releases](https://github.com/radai
 - **Worktree paths**: Fixed convention `../<repoName>.wt.<safeBranch>/` (slashes replaced with hyphens).
 - **No cascade merge on commit**: `commit` only commits to the target branch; branches above become stale. Use `sync` to merge.
 - **Sync merges + pushes**: `sync` merges each branch's parent into it (bottom-to-top), then pushes each updated branch (regular push, no force).
+- **Repo scanner**: Background thread scans registered directories for git repos on every invocation (non-blocking). Results cached in `~/.config/graft/repo-cache.toml`. Worktrees auto-added/removed from cache. Stale entries pruned automatically.
+- **Unified navigation**: `graft cd` is the single navigation command — matches repo names first, then branch names for worktrees. Replaces `graft wt goto`.
+- **Auto-fetch** (planned): Opt-in `git fetch --all` for tracked repos, rate-limited, runs in background thread.
 
 ## Tech Stack
 
@@ -74,37 +77,60 @@ All code in Graft.Core and Graft.Cli must be AOT-safe:
 - Git: Never commit directly to main/master. Always create a branch and open a PR.
 - Git: Always squash-merge PRs. Never rebase shared branches. Use `git pull` (merge) to sync with remote.
 
+### CLI Naming Convention
+
+Commands use **full names** as primary, with **short aliases** registered as hidden alternatives:
+
+| Action | Full (primary) | Short (alias) |
+|--------|---------------|---------------|
+| Remove | `remove` | `rm` |
+| List | `list` | `ls` |
+| Switch | `switch` | `sw` |
+| Commit | `commit` | `ci` |
+| Status | `status` | `st` |
+
+Options always have a long form primary with a short alias: `--force`/`-f`, `--create`/`-c`, `--message`/`-m`, `--base`/`-b`, `--branch`/`-b`. All destructive commands support `--force`/`-f` to skip confirmation.
+
 ## CLI Command Structure
 
+Short aliases shown in parentheses.
+
 ```
-graft stack init <name> [-b/--base <branch>]     # Create stack (sets active)
-graft stack list                                 # List all stacks
-graft stack switch <name>                        # Switch active stack
-graft stack push <branch> [-c/--create]          # Push branch to active stack
-graft stack pop                                  # Remove top branch from stack
-graft stack drop <branch>                        # Remove named branch from stack
-graft stack shift <branch>                       # Insert branch at bottom of stack
-graft stack commit -m '<msg>' [-b <branch>]        # Commit to stack branch
-graft stack sync [<branch>]                      # Merge parent + push stack branches
-graft stack log                                  # Show stack branch graph
-graft stack del <name> [-f/--force]                          # Delete a stack
+graft stack init <name> [-b/--base <branch>]          # Create stack (sets active)
+graft stack list (ls)                                  # List all stacks
+graft stack switch (sw) <name>                         # Switch active stack
+graft stack push <branch> [-c/--create]                # Push branch to active stack
+graft stack pop                                        # Remove top branch from stack
+graft stack drop <branch>                              # Remove named branch from stack
+graft stack shift <branch>                             # Insert branch at bottom of stack
+graft stack commit (ci) -m/--message '<msg>' [-b <branch>]  # Commit to stack branch
+graft stack sync [<branch>]                            # Merge parent + push stack branches
+graft stack log                                        # Show stack branch graph
+graft stack remove (rm) <name> [-f/--force]            # Delete a stack
 
-graft wt <branch>                                # Create worktree for existing branch
-graft wt <branch> -c/--create                              # Create new branch + worktree
-graft wt del <branch> [-f/--force]                        # Delete worktree
-graft wt list                                    # List worktrees
-graft wt goto <branch>                         # In console cd into worktree path
+graft wt <branch>                                      # Create worktree for existing branch
+graft wt <branch> -c/--create                          # Create new branch + worktree
+graft wt remove (rm) <branch> [-f/--force]             # Delete worktree
+graft wt list (ls)                                     # List worktrees
 
-graft nuke [-f/--force]                                 # Remove all graft resources
-graft nuke wt [-f/--force]                            # Remove all worktrees
-graft nuke stack [-f/--force]                         # Remove all stacks
-graft nuke branches                              # Remove branches whose upstream is gone
+graft scan add <directory>                             # Register directory for repo scanning
+graft scan remove (rm) <directory>                     # Unregister directory
+graft scan list (ls)                                   # List registered scan paths
 
-graft --continue                                 # Continue after conflict resolution
-graft --abort                                    # Abort in-progress operation
+graft cd <name>                                        # Navigate to repo or worktree
+graft status (st)                                      # Cross-repo status overview
+graft status (st) <reponame>                           # Detailed status for one repo
 
-graft install / uninstall / update / version     # Setup commands
-graft ui                                         # Start web UI
+graft nuke [-f/--force]                                # Remove all graft resources
+graft nuke wt [-f/--force]                             # Remove all worktrees
+graft nuke stack [-f/--force]                          # Remove all stacks
+graft nuke branches                                    # Remove branches whose upstream is gone
+
+graft --continue                                       # Continue after conflict resolution
+graft --abort                                          # Abort in-progress operation
+
+graft install / uninstall / update / version           # Setup commands
+graft ui                                               # Start web UI
 ```
 
 ## Module Layout (Graft.Core)
@@ -117,10 +143,12 @@ graft ui                                         # Start web UI
 - `AutoUpdate/` — Update checking and binary replacement
 - `Install/` — Alias installer (`gt` symlink, `git gt` alias)
 - `Config/` — Configuration types, loading, and active stack persistence
+- `Scan/` — Repo scanner (background directory scanning, repo cache, scan path management)
+- `Status/` — Cross-repo status aggregation (branch, ahead/behind, changed files, stacks, worktrees)
 
 ## Module Layout (Graft.Cli)
 
-- `Commands/` — CLI command definitions: `StackCommand`, `WorktreeCommand`, `NukeCommand`, setup commands
+- `Commands/` — CLI command definitions: `StackCommand`, `WorktreeCommand`, `ScanCommand`, `NukeCommand`, `CdCommand`, `StatusCommand`, setup commands
 - `Server/` — HTTP API server (`ApiServer`, handlers: `StackHandler`, `WorktreeHandler`, `NukeHandler`, `ConfigHandler`, `GitHandler`)
 - `Json/` — Request/response DTOs and AOT-safe JSON serialization context
 - `frontend/` — Svelte SPA source (built by MSBuild targets into `wwwroot/`)
@@ -154,6 +182,33 @@ Plain text file containing the name of the active stack. Located at `.git/graft/
 
 Fixed convention: `../<repoName>.wt.<safeBranch>/` where slashes in branch names are replaced with hyphens.
 Example: branch `feature/api` in repo `Graft` → `../Graft.wt.feature-api/`
+
+### Scan paths (in `~/.config/graft/config.toml`)
+
+```toml
+[[scan_paths]]
+path = "/Users/dev/projects"
+
+[[scan_paths]]
+path = "/Users/dev/work"
+```
+
+### Repo cache (`~/.config/graft/repo-cache.toml`)
+
+```toml
+[[repos]]
+name = "Graft"
+path = "/Users/dev/projects/Graft"
+auto_fetch = false
+
+[[repos]]
+name = "Graft.wt.feature-api"
+path = "/Users/dev/projects/Graft.wt.feature-api"
+branch = "feature/api"
+auto_fetch = false
+```
+
+Repos store name → path mappings. Worktree entries include a `branch` field for branch-name lookup via `graft cd`. The `auto_fetch` flag controls background `git fetch --all` (#19).
 
 ### Update state (`update-state.toml`)
 

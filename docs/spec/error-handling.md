@@ -17,10 +17,10 @@ To resolve:
   <numbered steps>
 ```
 
-### Example: Rebase Conflict
+### Example: Merge Conflict
 
 ```
-Error: Rebase conflict in 'auth/session-manager'
+Error: Merge conflict in 'auth/session-manager'
 
 Conflicting files:
   - src/session.cs
@@ -39,7 +39,7 @@ To abort: graft --abort
 Error: Branch 'auth/base-types' in stack 'auth-refactor' no longer exists.
 
 Restore it with 'git branch auth/base-types <commit>', or remove the stack
-with 'graft stack del auth-refactor' and recreate it.
+with 'graft stack remove auth-refactor' and recreate it.
 ```
 
 ### Example: No Staged Changes
@@ -58,23 +58,23 @@ Error: No active stack set. Run 'graft stack switch <name>' to select one.
 
 ## Conflict Resolution
 
-Conflicts can occur during `graft stack sync` when rebasing branches.
+Conflicts can occur during `graft stack sync` when merging branches.
 
 ### During Sync
 
 When `graft stack sync` encounters a conflict:
 
-1. The rebase is left in progress on the conflicting branch.
+1. The merge is left in progress on the conflicting branch.
 2. An `operation.toml` file is written recording the stack name, branch index, and original branch (see [Data Storage](data-storage.md)).
 3. Graft reports the conflicting files and exits.
 4. The user resolves conflicts manually, stages files with `git add`.
-5. `graft --continue` finishes the rebase and continues cascading to remaining branches.
+5. `graft --continue` finishes the merge and continues to remaining branches.
 6. If another conflict occurs, the process repeats.
-7. `graft --abort` aborts the rebase and returns to the original branch.
+7. `graft --abort` aborts the merge and returns to the original branch.
 
 ### During Commit
 
-When `graft stack commit` targets a branch that is not the topmost in the stack, the commit succeeds but branches above become stale. Run `graft stack sync` to rebase them.
+When `graft stack commit` targets a branch that is not the topmost in the stack, the commit succeeds but branches above become stale. Run `graft stack sync` to merge them.
 
 ---
 
@@ -95,7 +95,7 @@ The stash reference is resolved to a SHA (not a positional index like `stash@{0}
 
 `graft --abort` restores the user to their original branch:
 
-1. Aborts any in-progress rebase (`git rebase --abort`).
+1. Aborts any in-progress merge (`git merge --abort`).
 2. Reads the original branch from `operation.toml`.
 3. Checks out the original branch.
 4. Deletes `operation.toml`.

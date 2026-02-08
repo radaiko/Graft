@@ -28,7 +28,7 @@ Created stack 'hotfix' with trunk 'release/2.0'.
 Active stack: hotfix
 ```
 
-### `graft stack list`
+### `graft stack list` (alias: `ls`)
 
 List all stacks. The active stack is marked with `*`.
 
@@ -38,7 +38,7 @@ $ graft stack list
   hotfix      (trunk: release/2.0, 1 branch)
 ```
 
-### `graft stack switch <name>`
+### `graft stack switch <name>` (alias: `sw`)
 
 Switch the active stack. Fails if the named stack does not exist.
 
@@ -89,9 +89,9 @@ $ graft stack shift feature/config
 Shifted 'feature/config' to bottom of stack 'my-feature'.
 ```
 
-### `graft stack commit -m "<message>" [-b <branch>] [--amend]`
+### `graft stack commit --message "<message>" [-b <branch>] [--amend]` (alias: `ci`)
 
-Commit staged changes to the active stack. Defaults to the topmost branch. Use `-b` to target a specific branch. Use `--amend` to amend the latest commit.
+Commit staged changes to the active stack. Defaults to the topmost branch. Use `-b` to target a specific branch. Use `--amend` to amend the latest commit. Short form: `-m`.
 
 ```bash
 # Commit to the topmost branch
@@ -135,13 +135,13 @@ Stack: my-feature (trunk: main)
         └── feature/api (1 commit)
 ```
 
-### `graft stack del <name> [-f/--force]`
+### `graft stack remove <name> [-f/--force]` (alias: `rm`)
 
-Delete a stack. Git branches are kept. If the deleted stack was active, the active stack is cleared.
+Remove a stack. Git branches are kept. If the removed stack was active, the active stack is cleared.
 
 ```bash
-$ graft stack del my-feature
-Deleted stack 'my-feature'.
+$ graft stack remove my-feature
+Removed stack 'my-feature'.
 ```
 
 ---
@@ -167,19 +167,19 @@ Created branch 'feature/new-thing'.
 Created worktree at ../Graft.wt.feature-new-thing/
 ```
 
-### `graft wt del <branch> [-f/--force]`
+### `graft wt remove <branch> [-f/--force]` (alias: `rm`)
 
-Delete the worktree for the named branch. Fails if uncommitted changes exist unless `-f` is used.
+Remove the worktree for the named branch. Fails if uncommitted changes exist unless `-f` is used. Also removes the worktree from the repo cache.
 
 ```bash
-$ graft wt del feature/auth
+$ graft wt remove feature/auth
 Removed worktree at ../Graft.wt.feature-auth/
 
 # Force-remove even with uncommitted changes
-$ graft wt del feature/auth -f
+$ graft wt remove feature/auth -f
 ```
 
-### `graft wt list`
+### `graft wt list` (alias: `ls`)
 
 List all worktrees of this repository.
 
@@ -190,13 +190,83 @@ $ graft wt list
 /Users/dev/Graft.wt.feature-api           feature/api
 ```
 
-### `graft wt goto <branch>`
+---
 
-Print the worktree path for the named branch. Use with `cd` to jump to it:
+## Scan Commands
+
+Manage directories that Graft scans for git repositories. Discovered repos power `graft cd` and `graft status`.
+
+### `graft scan add <directory>`
+
+Register a directory to scan for git repositories.
 
 ```bash
-$ cd $(graft wt goto feature/auth)
+$ graft scan add ~/dev/projects
+Added scan path: /Users/dev/projects
 ```
+
+### `graft scan remove <directory>` (alias: `rm`)
+
+Remove a directory from the scan list.
+
+```bash
+$ graft scan remove ~/dev/projects
+Removed scan path: /Users/dev/projects
+```
+
+### `graft scan list` (alias: `ls`)
+
+List all registered scan paths.
+
+```bash
+$ graft scan list
+/Users/dev/projects
+/Users/dev/work
+```
+
+---
+
+## Navigation
+
+### `graft cd <name>`
+
+Navigate to a discovered repo or worktree. Matches repo names first, then branch names for worktrees.
+
+```bash
+# Jump to a repo by name
+$ graft cd my-app
+
+# Jump to a worktree by branch name
+$ graft cd feature/auth
+# → ../Graft.wt.feature-auth/
+```
+
+If multiple matches exist, all are shown and you pick one. Works via a shell function since a child process can't change the parent's working directory.
+
+---
+
+## Status
+
+### `graft status` (alias: `st`)
+
+Show a compact overview of all discovered repos.
+
+```bash
+$ graft status
+Graft  ~/dev/projects/Graft
+  branch   main
+  status   ✓ clean
+  stack    auth-refactor (3 branches)
+  worktrees  2 active
+
+my-app  ~/dev/projects/my-app
+  branch   feature/api
+  status   ↑2 ↓1  3 changed
+```
+
+### `graft status <reponame>` (alias: `st`)
+
+Show detailed status for a specific repo including stack graph and worktree list.
 
 ---
 
@@ -330,7 +400,8 @@ Branches are ordered bottom-to-top (index 0 is closest to trunk).
 
 | File | Purpose |
 |------|---------|
-| `config.toml` | Global settings |
+| `config.toml` | Global settings (scan paths) |
+| `repo-cache.toml` | Discovered repos and worktrees cache |
 | `update-state.toml` | Auto-update state (last check, pending update) |
 | `staging/` | Downloaded update binaries |
 

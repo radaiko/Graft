@@ -34,7 +34,7 @@ Graft tracks which stack is "active". All stack operations (`push`, `pop`, `drop
 - **Stored as** plain text in `.git/graft/active-stack` (just the stack name, no TOML).
 - **Auto-set on init**: `graft stack init <name>` sets the new stack as active.
 - **Auto-select**: If no active-stack file exists and exactly one stack exists, that stack is automatically selected.
-- **Cleared on delete**: If the active stack is deleted (`graft stack del`), the active-stack file is removed.
+- **Cleared on remove**: If the active stack is removed (`graft stack remove`), the active-stack file is removed.
 - **Switch with** `graft stack switch <name>`.
 
 ---
@@ -49,11 +49,11 @@ Initialize a stack using the current branch as trunk and set it as active.
 
 Initialize a stack using the named branch as trunk and set it as active. The base branch must exist.
 
-### `graft stack list`
+### `graft stack list` (alias: `ls`)
 
 List all stacks. The active stack is indicated.
 
-### `graft stack switch <name>`
+### `graft stack switch <name>` (alias: `sw`)
 
 Switch the active stack. Fails if the named stack does not exist; the active stack stays untouched.
 
@@ -77,15 +77,15 @@ Remove the named branch from the active stack regardless of position. The git br
 
 Insert an existing branch at the bottom of the active stack (directly above the trunk). The branch must exist in git and not already be in the stack.
 
-### `graft stack commit -m "<message>"`
+### `graft stack commit --message "<message>"` / `-m "<message>"`
 
 Commit git staged changes to the topmost branch of the active stack.
 
-### `graft stack commit -m "<message>" -b <branch>`
+### `graft stack commit --message "<message>" -b <branch>`
 
 Commit git staged changes to the named branch. Uses stash/checkout/pop/commit/return flow. Branches above the target become stale.
 
-### `graft stack commit -m "<message>" --amend`
+### `graft stack commit --message "<message>" --amend`
 
 Amend the latest commit on the target branch instead of creating a new one. Can be combined with `-b`.
 
@@ -105,9 +105,9 @@ Sync only the named branch. Determines the correct parent (trunk if it's the fir
 
 ### `graft stack log`
 
-Show a visual graph of the active stack with commit counts and rebase status.
+Show a visual graph of the active stack with commit counts and sync status.
 
-### `graft stack del <name>` / `graft stack del <name> -f` / `--force`
+### `graft stack remove <name>` (alias: `rm`) / `--force` / `-f`
 
 Delete a stack by name. The git branches are kept. If the deleted stack was active, the active-stack file is cleared.
 
@@ -119,27 +119,76 @@ Worktree paths follow the convention `../<reponame>.wt.<safebranch>/` where slas
 
 ### `graft wt <branch>`
 
-Create a worktree from an existing branch.
+Create a worktree from an existing branch. Automatically adds the worktree to the repo cache (see [Scan Commands](#scan-commands)).
 
 ### `graft wt <branch> -c` / `--create`
 
-Create a new git branch and a worktree for it. Fails if the branch already exists.
+Create a new git branch and a worktree for it. Fails if the branch already exists. Automatically adds the worktree to the repo cache.
 
-### `graft wt del <branch>`
+### `graft wt remove <branch>` (alias: `rm`)
 
-Delete the worktree for the named branch. Fails if the worktree has uncommitted changes.
+Delete the worktree for the named branch. Fails if the worktree has uncommitted changes. Also removes the worktree from the repo cache (see [Scan Commands](#scan-commands)).
 
-### `graft wt del <branch> -f` / `--force`
+### `graft wt remove <branch> --force` / `-f`
 
 Force-delete the worktree even if it has uncommitted changes.
 
-### `graft wt list`
+### `graft wt list` (alias: `ls`)
 
 List all worktrees of this repo.
 
-### `graft wt goto <branch>`
+---
 
-Print the worktree path for the named branch, suitable for use with `cd`. In a shell, use `cd $(graft wt goto <branch>)` to jump into a worktree directory.
+## Scan Commands
+
+Graft maintains a list of directories to scan for git repositories. On every invocation, a background thread scans these paths and caches the results. This powers `graft cd` and `graft status`.
+
+### `graft scan add <directory>`
+
+Register a directory to scan for git repositories. The path is stored in the global config (`~/.config/graft/config.toml`). Fails if the directory does not exist.
+
+### `graft scan remove <directory>` (alias: `rm`)
+
+Remove a directory from the scan list.
+
+### `graft scan list` (alias: `ls`)
+
+List all registered scan paths.
+
+### Background Scanning
+
+On every `graft` invocation, a background thread scans all registered paths for git repositories. The scan is non-blocking — the main command runs immediately. Results are cached in `~/.config/graft/repo-cache.toml` (see [Data Storage](spec/data-storage.md)).
+
+- **Stale removal**: If a previously cached repo no longer exists on disk, it is automatically removed from the cache.
+- **Worktree integration**: `graft wt` automatically adds new worktrees to the repo cache. `graft wt remove` automatically removes them.
+
+---
+
+## Navigation
+
+### `graft cd <name>`
+
+Navigate to a discovered repo or worktree. This is the single "take me there" command, replacing `graft wt goto`.
+
+Lookup order:
+1. Exact match against repo/directory names in the cache.
+2. Match against branch names for worktrees (e.g., `graft cd feature/api` finds worktree `../Graft.wt.feature-api/`).
+
+If multiple matches exist, all are shown and the user picks one.
+
+Works as a shell function/alias since a child process cannot change the parent's working directory. The binary prints the path; the shell wrapper calls `cd`.
+
+---
+
+## Status
+
+### `graft status` (alias: `st`)
+
+Show a compact overview of all discovered repos: active branch, ahead/behind counts, changed/untracked file counts, active stack, and worktree count.
+
+### `graft status <reponame>` (alias: `st`)
+
+Show detailed status for a single repo: branch, upstream tracking, changed files, stack graph with per-branch ahead/behind, and worktree list with paths.
 
 ---
 

@@ -72,7 +72,7 @@ pr_state = "open"
 | `pr_url` | string | no | Pull request URL (requires `pr_number`) |
 | `pr_state` | string | no | `"open"`, `"merged"`, or `"closed"` (default: `"open"`) |
 
-**Branch ordering:** Branches are ordered bottom-to-top. Index 0 is rebased onto the trunk. Each subsequent branch is rebased onto the one before it.
+**Branch ordering:** Branches are ordered bottom-to-top. Index 0 is merged from the trunk. Each subsequent branch is merged from the one before it.
 
 ### `worktrees.toml` — Worktree Configuration
 
@@ -131,11 +131,53 @@ User-level configuration and update state, shared across all repos.
 
 ```
 ~/.config/graft/
-├── config.toml           # Global user preferences
+├── config.toml           # Global user preferences (scan paths, settings)
+├── repo-cache.toml       # Cached repo/worktree discovery results
 ├── update-state.toml     # Auto-update tracking
 └── staging/              # Downloaded update binaries
     └── graft-<version>   # Staged binary awaiting application
 ```
+
+### `config.toml` — Global Configuration
+
+Includes scan paths for repo discovery (see [Scan Commands](../spec.md#scan-commands)).
+
+```toml
+[[scan_paths]]
+path = "/Users/dev/projects"
+
+[[scan_paths]]
+path = "/Users/dev/work"
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `scan_paths` | array of tables | Directories to scan for git repositories |
+| `scan_paths[].path` | string | Absolute path to a directory |
+
+### `repo-cache.toml` — Discovered Repos Cache
+
+Populated by background scanning. Updated automatically when worktrees are created/removed. Stale entries (paths that no longer exist) are pruned on each scan.
+
+```toml
+[[repos]]
+name = "Graft"
+path = "/Users/dev/projects/Graft"
+auto_fetch = false
+
+[[repos]]
+name = "Graft.wt.feature-api"
+path = "/Users/dev/projects/Graft.wt.feature-api"
+branch = "feature/api"
+auto_fetch = false
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | yes | Repository directory name |
+| `path` | string | yes | Absolute path to the repository |
+| `branch` | string | no | Branch name (present only for worktree entries, used for `graft cd` branch-name lookup) |
+| `auto_fetch` | boolean | no | Whether to run `git fetch --all` in the background (default: `false`) |
 
 ### `update-state.toml` — Auto-Update State
 

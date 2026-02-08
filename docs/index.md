@@ -105,7 +105,7 @@ Graft fixes this. Each branch targets the one below it, so each PR shows only it
 | `gt stack log` | Display a visual graph of the stack |
 | `gt stack sync` | Merge the entire stack bottom-to-top, then push |
 | `gt stack commit -m <msg> [-b <branch>]` | Commit staged changes to any branch in the stack |
-| `gt stack del <name>` | Delete a stack definition (git branches are kept) |
+| `gt stack remove <name>` | Remove a stack definition (git branches are kept) |
 
 ### Worktree Management
 
@@ -113,7 +113,7 @@ Graft fixes this. Each branch targets the one below it, so each PR shows only it
 |---------|-------------|
 | `gt wt <branch>` | Create a worktree for an existing branch |
 | `gt wt <branch> -c` | Create a new branch + worktree |
-| `gt wt del <branch>` | Remove a worktree |
+| `gt wt remove <branch>` | Remove a worktree |
 | `gt wt list` | List all worktrees |
 
 ### Setup

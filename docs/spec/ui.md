@@ -60,7 +60,7 @@ All mutation endpoints return the updated state so the frontend can refresh with
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/stacks` | List all stacks (names) |
-| GET | `/api/stacks/{name}` | Stack detail: trunk, branches, commit counts, rebase status, HEAD |
+| GET | `/api/stacks/{name}` | Stack detail: trunk, branches, commit counts, sync status, HEAD |
 | POST | `/api/stacks` | Init a new stack `{ "name": "...", "baseBranch": "..." }` |
 | DELETE | `/api/stacks/{name}` | Delete a stack |
 | GET | `/api/stacks/active` | Get the active stack `{ "name": "..." }` |
@@ -69,7 +69,7 @@ All mutation endpoints return the updated state so the frontend can refresh with
 | POST | `/api/stacks/pop` | Pop top branch from active stack |
 | POST | `/api/stacks/drop` | Drop a named branch `{ "branchName": "..." }` |
 | POST | `/api/stacks/shift` | Shift branch to bottom `{ "branchName": "..." }` |
-| POST | `/api/stacks/sync` | Sync/rebase the active stack |
+| POST | `/api/stacks/sync` | Sync the active stack (merge bottom-to-top + push) |
 | POST | `/api/stacks/commit` | Commit staged changes `{ "message": "...", "branch": "...", "amend": false }` |
 
 All mutation endpoints (push, pop, drop, shift, sync, commit) operate on the active stack. The frontend ensures the correct stack is active before calling these.
@@ -102,6 +102,22 @@ These endpoints wrap the worktree commands described in [spec.md](../spec.md).
 | POST | `/api/nuke/stacks` | Remove all stacks `{ "force": false }` |
 | POST | `/api/nuke/branches` | Remove branches whose upstream is gone |
 
+### Scan Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/scan/paths` | List registered scan paths |
+| POST | `/api/scan/paths` | Add a scan path `{ "path": "..." }` |
+| DELETE | `/api/scan/paths` | Remove a scan path `{ "path": "..." }` |
+| GET | `/api/scan/repos` | List all discovered repos from cache |
+
+### Status Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/status` | Cross-repo status overview (all discovered repos) |
+| GET | `/api/status/{reponame}` | Detailed status for a specific repo |
+
 ### Config Endpoints
 
 | Method | Path | Description |
@@ -126,10 +142,10 @@ The app has three views, navigated by a sidebar or tab bar.
 
 ### 1. Stacks View (default)
 
-The left panel shows a list of stacks. The main area shows a vertical graph of the active stack: trunk at top, branches flowing down, each displaying branch name, commit count, and rebase status. The current HEAD branch is highlighted.
+The left panel shows a list of stacks. The main area shows a vertical graph of the active stack: trunk at top, branches flowing down, each displaying branch name, commit count, and sync status. The current HEAD branch is highlighted.
 
 **Action bar:**
-- **Sync** — rebase the stack onto trunk
+- **Sync** — merge the stack bottom-to-top and push
 - **Push** — input for branch name, creates and pushes to top
 - **Commit** — shows staged files, message input, optional target branch selector
 
