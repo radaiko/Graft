@@ -341,6 +341,196 @@ public sealed class AutoUpdateTests
         }
     }
 
+    // ========================
+    // UpdateApplier edge cases
+    // ========================
+
+    [Fact]
+    public async Task ApplyPendingUpdate_PathTraversal_Throws()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"graft-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            // Create state with a staged path outside staging dir
+            var state = new UpdateState
+            {
+                LastChecked = DateTime.UtcNow,
+                CurrentVersion = "0.9.0",
+                PendingUpdate = new PendingUpdate
+                {
+                    Version = "1.0.0",
+                    BinaryPath = "/tmp/evil-path/graft",
+                    Checksum = "sha256:fake",
+                    DownloadedAt = DateTime.UtcNow,
+                },
+            };
+            UpdateChecker.SaveUpdateState(state, tempDir);
+
+            var currentBinary = Path.Combine(tempDir, "graft-current");
+            File.WriteAllText(currentBinary, "old binary");
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => UpdateApplier.ApplyPendingUpdateAsync(tempDir, currentBinary));
+            Assert.Contains("outside the expected staging directory", ex.Message);
+
+            // Verify pending was cleared
+            var newState = ConfigLoader.LoadUpdateState(tempDir);
+            Assert.Null(newState.PendingUpdate);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ApplyPendingUpdate_MissingStagedBinary_ReturnsFalseAndClears()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"graft-test-{Guid.NewGuid():N}");
+        var stagingDir = Path.Combine(tempDir, "staging");
+        Directory.CreateDirectory(stagingDir);
+        try
+        {
+            var state = new UpdateState
+            {
+                LastChecked = DateTime.UtcNow,
+                CurrentVersion = "0.9.0",
+                PendingUpdate = new PendingUpdate
+                {
+                    Version = "1.0.0",
+                    BinaryPath = Path.Combine(stagingDir, "graft-1.0.0"),
+                    Checksum = "sha256:doesntmatter",
+                    DownloadedAt = DateTime.UtcNow,
+                },
+            };
+            UpdateChecker.SaveUpdateState(state, tempDir);
+
+            var currentBinary = Path.Combine(tempDir, "graft-current");
+            File.WriteAllText(currentBinary, "old binary");
+
+            var result = await UpdateApplier.ApplyPendingUpdateAsync(tempDir, currentBinary);
+            Assert.False(result);
+
+            // Verify pending was cleared
+            var newState = ConfigLoader.LoadUpdateState(tempDir);
+            Assert.Null(newState.PendingUpdate);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ApplyPendingUpdate_ChecksumMismatch_ThrowsAndClears()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"graft-test-{Guid.NewGuid():N}");
+        var stagingDir = Path.Combine(tempDir, "staging");
+        Directory.CreateDirectory(stagingDir);
+        try
+        {
+            var stagedPath = Path.Combine(stagingDir, "graft-1.0.0");
+            File.WriteAllBytes(stagedPath, "some content"u8.ToArray());
+
+            var state = new UpdateState
+            {
+                LastChecked = DateTime.UtcNow,
+                CurrentVersion = "0.9.0",
+                PendingUpdate = new PendingUpdate
+                {
+                    Version = "1.0.0",
+                    BinaryPath = stagedPath,
+                    Checksum = "sha256:wrong_checksum",
+                    DownloadedAt = DateTime.UtcNow,
+                },
+            };
+            UpdateChecker.SaveUpdateState(state, tempDir);
+
+            var currentBinary = Path.Combine(tempDir, "graft-current");
+            File.WriteAllText(currentBinary, "old binary");
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => UpdateApplier.ApplyPendingUpdateAsync(tempDir, currentBinary));
+            Assert.Contains("checksum mismatch", ex.Message);
+
+            // Verify staged binary was deleted
+            Assert.False(File.Exists(stagedPath));
+
+            // Verify pending was cleared
+            var newState = ConfigLoader.LoadUpdateState(tempDir);
+            Assert.Null(newState.PendingUpdate);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ApplyPendingUpdate_NoPendingUpdate_ReturnsFalse()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"graft-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var state = new UpdateState
+            {
+                LastChecked = DateTime.UtcNow,
+                CurrentVersion = "0.9.0",
+            };
+            UpdateChecker.SaveUpdateState(state, tempDir);
+
+            var currentBinary = Path.Combine(tempDir, "graft-current");
+            File.WriteAllText(currentBinary, "binary");
+
+            var result = await UpdateApplier.ApplyPendingUpdateAsync(tempDir, currentBinary);
+            Assert.False(result);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void HasPendingUpdate_NoPending_ReturnsFalse()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"graft-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            File.WriteAllText(Path.Combine(tempDir, "update-state.toml"), """
+                last_checked = "2026-02-05T14:30:00Z"
+                current_version = "0.3.1"
+                """);
+
+            Assert.False(UpdateApplier.HasPendingUpdate(tempDir));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    // Archive extraction: zip missing binary throws
+    [Fact]
+    public void ExtractFromZip_MissingBinary_Throws()
+    {
+        using var zipStream = new MemoryStream();
+        using (var zip = new System.IO.Compression.ZipArchive(
+            zipStream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        {
+            var entry = zip.CreateEntry("other-file.txt");
+            using var entryStream = entry.Open();
+            entryStream.Write("not the binary"u8.ToArray());
+        }
+        zipStream.Position = 0;
+
+        Assert.Throws<InvalidOperationException>(
+            () => ReleaseFetcher.ExtractFromZip(zipStream, "graft.exe"));
+    }
+
     private static async Task<string> WriteTempFile(string dir, byte[] content)
     {
         var path = Path.Combine(dir, "temp-binary");

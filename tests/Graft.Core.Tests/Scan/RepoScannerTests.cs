@@ -147,4 +147,43 @@ public sealed class RepoScannerTests : IDisposable
         var cache = ConfigLoader.LoadRepoCache(_configDir);
         Assert.Empty(cache.Repos);
     }
+
+    [Fact]
+    public void ScanDirectory_MaxDepthZero_FindsNothingAtCurrentLevel()
+    {
+        // A repo at depth 1 should NOT be found with maxDepth 0
+        CreateFakeGitRepo("depth-zero-repo");
+
+        var repos = RepoScanner.ScanDirectory(_scanDir, maxDepth: 0);
+        Assert.Empty(repos);
+    }
+
+    [Fact]
+    public void ScanDirectory_EmptyDirectory_ReturnsEmpty()
+    {
+        var repos = RepoScanner.ScanDirectory(_scanDir);
+        Assert.Empty(repos);
+    }
+
+    [Fact]
+    public void ScanDirectory_SkipsVendorDir()
+    {
+        var vendorDir = Path.Combine(_scanDir, "vendor", "some-package");
+        Directory.CreateDirectory(vendorDir);
+        Directory.CreateDirectory(Path.Combine(vendorDir, ".git"));
+
+        var repos = RepoScanner.ScanDirectory(_scanDir);
+        Assert.Empty(repos);
+    }
+
+    [Fact]
+    public void ScanDirectory_SkipsCacheDir()
+    {
+        var cacheDir = Path.Combine(_scanDir, ".cache", "some-project");
+        Directory.CreateDirectory(cacheDir);
+        Directory.CreateDirectory(Path.Combine(cacheDir, ".git"));
+
+        var repos = RepoScanner.ScanDirectory(_scanDir);
+        Assert.Empty(repos);
+    }
 }

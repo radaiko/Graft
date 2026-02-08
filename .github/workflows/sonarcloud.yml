@@ -42,7 +42,8 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" \
             /d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx" \
-            /d:sonar.exclusions="**/wwwroot/**,**/bin/**,**/obj/**,**/frontend/node_modules/**,.github/**" \
+            /d:sonar.exclusions="**/wwwroot/**,**/bin/**,**/obj/**,**/frontend/node_modules/**,.github/**,docs/**,src/Graft.VSCodeExtension/**,src/Graft.VS2026Extension/**,src/Graft.JetbrainsExtension/**" \
+            /d:sonar.coverage.exclusions="**/Program.cs,**/Tui/FuzzyPicker.cs" \
             /d:sonar.test.inclusions="tests/**"
 
       - name: Build
@@ -64,7 +65,7 @@ jobs:
             --no-build \
             --logger trx \
             --collect:"XPlat Code Coverage" \
-            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[Graft.Cli]*%2c[Graft.Core]*"
 
       - name: End analysis
         if: always()

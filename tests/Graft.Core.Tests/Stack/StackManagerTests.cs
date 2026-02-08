@@ -664,4 +664,53 @@ public sealed class StackManagerTests : IDisposable
         var result = await _git.RunAsync("merge", "--abort");
         Assert.False(result.Success);
     }
+
+    // ========================
+    // Operation state
+    // ========================
+
+    [Fact]
+    public void LoadOperationState_NoFile_ReturnsNull()
+    {
+        _repo.InitGraftDir();
+        Assert.Null(StackManager.LoadOperationState(_repo.Path));
+    }
+
+    [Fact]
+    public void ClearOperationState_NoFile_DoesNotThrow()
+    {
+        _repo.InitGraftDir();
+        var ex = Record.Exception(() => StackManager.ClearOperationState(_repo.Path));
+        Assert.Null(ex);
+    }
+
+    // ========================
+    // Sync with specific branch name
+    // ========================
+
+    [Fact]
+    public async Task Sync_SpecificBranch_SyncsOnlyUpToThatBranch()
+    {
+        _repo.InitGraftDir();
+        var stack = await StackManager.InitAsync("test-stack", _repo.Path);
+
+        await _git.RunAsync("checkout", "-b", "branch1");
+        _repo.CommitFile("file1.txt", "content1", "Add file1");
+        await _git.RunAsync("checkout", "-b", "branch2");
+        _repo.CommitFile("file2.txt", "content2", "Add file2");
+
+        await _git.RunAsync("checkout", stack.Trunk);
+        await StackManager.PushAsync("branch1", _repo.Path);
+        await StackManager.PushAsync("branch2", _repo.Path);
+
+        await _git.RunAsync("checkout", stack.Trunk);
+        _repo.CommitFile("trunk-update.txt", "trunk", "Trunk update");
+
+        var result = await StackManager.SyncAsync(_repo.Path, "branch1");
+
+        Assert.False(result.HasConflict);
+        // Should have synced branch1 only
+        Assert.Single(result.BranchResults);
+        Assert.Equal("branch1", result.BranchResults[0].Name);
+    }
 }
