@@ -10,145 +10,142 @@ var stateDir = Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
     ".config", "graft");
 
-// 1. Apply pending update (blocking) — re-exec with new binary
-try
-{
-    if (UpdateApplier.HasPendingUpdate(stateDir))
-    {
-        var binaryPath = Environment.ProcessPath;
-        if (binaryPath is not null)
-        {
-            var applied = await UpdateApplier.ApplyPendingUpdateAsync(stateDir, binaryPath);
-            if (applied)
-            {
-                // Re-exec with the updated binary
-                var psi = new ProcessStartInfo(binaryPath)
-                {
-                    UseShellExecute = false,
-                };
-                foreach (var arg in args)
-                    psi.ArgumentList.Add(arg);
+await TryApplyPendingUpdateAsync(stateDir, args);
+SpawnBackgroundTasks(stateDir, args);
 
-                using var proc = Process.Start(psi);
-                if (proc is not null)
-                {
-                    await proc.WaitForExitAsync();
-                    return proc.ExitCode;
-                }
-            }
+var root = BuildRootCommand();
+var exitCode = await root.Parse(args).InvokeAsync();
+return exitCode != 0 ? exitCode : Environment.ExitCode;
+
+static async Task TryApplyPendingUpdateAsync(string stateDir, string[] args)
+{
+    try
+    {
+        if (!UpdateApplier.HasPendingUpdate(stateDir))
+            return;
+
+        var binaryPath = Environment.ProcessPath;
+        if (binaryPath is null)
+            return;
+
+        var applied = await UpdateApplier.ApplyPendingUpdateAsync(stateDir, binaryPath);
+        if (!applied)
+            return;
+
+        // Re-exec with the updated binary
+        var psi = new ProcessStartInfo(binaryPath)
+        {
+            UseShellExecute = false,
+        };
+        foreach (var arg in args)
+            psi.ArgumentList.Add(arg);
+
+        using var proc = Process.Start(psi);
+        if (proc is not null)
+        {
+            await proc.WaitForExitAsync();
+            Environment.Exit(proc.ExitCode);
         }
     }
-}
-catch
-{
-    // Update failed (corrupt state, apply error, etc.) — continue with current binary
+    catch
+    {
+        // Update failed (corrupt state, apply error, etc.) — continue with current binary
+    }
 }
 
-// 2. Spawn background update check (fire-and-forget)
-//    Skip when running "update" — that command does its own check.
-if (args.Length == 0 || !string.Equals(args[0], "update", StringComparison.OrdinalIgnoreCase))
+static void SpawnBackgroundTasks(string stateDir, string[] args)
 {
+    // Background update check (fire-and-forget)
+    // Skip when running "update" — that command does its own check.
+    if (args.Length == 0 || !string.Equals(args[0], "update", StringComparison.OrdinalIgnoreCase))
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var version = VersionCommand.GetCurrentVersion();
+                await ReleaseFetcher.CheckAndStageUpdateAsync(stateDir, version);
+            }
+            catch
+            {
+                // Silently swallow — background check must never crash the CLI
+            }
+        });
+    }
+
+    // Background repo scan (fire-and-forget)
+    _ = Task.Run(() =>
+    {
+        try
+        {
+            RepoScanner.ScanAndUpdateCache(stateDir);
+        }
+        catch
+        {
+            // Silently swallow — background scan must never crash the CLI
+        }
+    });
+
+    // Background auto-fetch (fire-and-forget)
     _ = Task.Run(async () =>
     {
         try
         {
-            var version = Graft.Cli.Commands.VersionCommand.GetCurrentVersion();
-            await ReleaseFetcher.CheckAndStageUpdateAsync(stateDir, version);
+            await AutoFetcher.FetchDueReposAsync(stateDir);
         }
         catch
         {
-            // Silently swallow — background check must never crash the CLI
+            // Silently swallow — background fetch must never crash the CLI
         }
     });
 }
 
-// 3. Spawn background repo scan (fire-and-forget)
-_ = Task.Run(() =>
+static RootCommand BuildRootCommand()
 {
-    try
+    var root = new RootCommand("Graft — stacked branches and worktree management");
+
+    root.Add(StackCommand.Create());
+    root.Add(WorktreeCommand.Create());
+    root.Add(NukeCommand.Create());
+    root.Add(ScanCommand.Create());
+    root.Add(CdCommand.Create());
+    root.Add(StatusCommand.Create());
+    root.Add(StatusCommand.CreateAlias());
+    root.Add(InstallCommand.Create());
+    root.Add(UninstallCommand.Create());
+    root.Add(UpdateCommand.Create());
+    root.Add(VersionCommand.Create());
+    root.Add(UiCommand.Create());
+
+    var continueOption = new Option<bool>("--continue") { Description = "Continue after resolving conflicts" };
+    var abortOption = new Option<bool>("--abort") { Description = "Abort an in-progress operation" };
+    root.Add(continueOption);
+    root.Add(abortOption);
+
+    root.SetAction(async (parseResult, ct) =>
     {
-        RepoScanner.ScanAndUpdateCache(stateDir);
-    }
-    catch
-    {
-        // Silently swallow — background scan must never crash the CLI
-    }
-});
+        var doContinue = parseResult.GetValue(continueOption);
+        var doAbort = parseResult.GetValue(abortOption);
 
-// 4. Spawn background auto-fetch (fire-and-forget)
-_ = Task.Run(async () =>
-{
-    try
-    {
-        await AutoFetcher.FetchDueReposAsync(stateDir);
-    }
-    catch
-    {
-        // Silently swallow — background fetch must never crash the CLI
-    }
-});
+        if (doContinue && doAbort)
+        {
+            await Console.Error.WriteLineAsync("Error: --continue and --abort cannot be used together.");
+            Environment.ExitCode = 1;
+            return;
+        }
 
-var root = new RootCommand("Graft — stacked branches and worktree management");
+        if (doContinue) { await HandleContinueAsync(ct); return; }
+        if (doAbort) { await HandleAbortAsync(ct); return; }
+        ShowHelp(root);
+    });
 
-// Stack commands (grouped)
-root.Add(StackCommand.Create());
-
-// Worktree commands
-root.Add(WorktreeCommand.Create());
-
-// Nuke command
-root.Add(NukeCommand.Create());
-
-// Scan command
-root.Add(ScanCommand.Create());
-
-// Navigation command
-root.Add(CdCommand.Create());
-
-// Status command
-root.Add(StatusCommand.Create());
-root.Add(StatusCommand.CreateAlias());
-
-// Setup commands
-root.Add(InstallCommand.Create());
-root.Add(UninstallCommand.Create());
-root.Add(UpdateCommand.Create());
-root.Add(VersionCommand.Create());
-
-// UI command
-root.Add(UiCommand.Create());
-
-// Global options: --continue / --abort
-var continueOption = new Option<bool>("--continue") { Description = "Continue after resolving conflicts" };
-var abortOption = new Option<bool>("--abort") { Description = "Abort an in-progress operation" };
-root.Add(continueOption);
-root.Add(abortOption);
-
-root.SetAction(async (parseResult, ct) =>
-{
-    var doContinue = parseResult.GetValue(continueOption);
-    var doAbort = parseResult.GetValue(abortOption);
-
-    if (doContinue && doAbort)
-    {
-        await Console.Error.WriteLineAsync("Error: --continue and --abort cannot be used together.");
-        Environment.ExitCode = 1;
-        return;
-    }
-
-    if (doContinue) { await HandleContinueAsync(ct); return; }
-    if (doAbort) { await HandleAbortAsync(ct); return; }
-    ShowHelp(root);
-});
-
-var exitCode = await root.Parse(args).InvokeAsync();
-return exitCode != 0 ? exitCode : Environment.ExitCode;
+    return root;
+}
 
 static async Task HandleContinueAsync(CancellationToken ct)
 {
     var repoPath = Directory.GetCurrentDirectory();
 
-    // Check if we have a graft operation state (cascade sync)
     var opState = StackManager.LoadOperationState(repoPath);
     if (opState != null)
     {
@@ -226,7 +223,6 @@ static async Task HandleAbortAsync(CancellationToken ct)
 {
     var repoPath = Directory.GetCurrentDirectory();
 
-    // Check if we have a graft operation state
     var opState = StackManager.LoadOperationState(repoPath);
     if (opState != null)
     {

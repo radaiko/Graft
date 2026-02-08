@@ -25,25 +25,26 @@ public static class NukeManager
             ? StringComparison.OrdinalIgnoreCase
             : StringComparison.Ordinal;
 
-        var linkedWorktrees = worktrees
+        var branchesToRemove = worktrees
             .Where(wt => wt.Branch != null && !wt.IsBare
-                && !string.Equals(repoFullPath, Path.GetFullPath(wt.Path), pathComparison));
+                && !string.Equals(repoFullPath, Path.GetFullPath(wt.Path), pathComparison))
+            .Select(wt => wt.Branch!)
+            .ToList();
 
-        foreach (var wt in linkedWorktrees)
+        foreach (var branch in branchesToRemove)
         {
-
             try
             {
-                await WorktreeManager.RemoveAsync(wt.Branch!, repoPath, force, ct);
-                result.Removed.Add(wt.Branch!);
+                await WorktreeManager.RemoveAsync(branch, repoPath, force, ct);
+                result.Removed.Add(branch);
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("uncommitted changes"))
             {
-                result.Skipped.Add($"{wt.Branch} (dirty)");
+                result.Skipped.Add($"{branch} (dirty)");
             }
             catch (Exception ex)
             {
-                result.Errors.Add($"{wt.Branch}: {ex.Message}");
+                result.Errors.Add($"{branch}: {ex.Message}");
             }
         }
 

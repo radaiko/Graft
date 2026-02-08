@@ -66,16 +66,7 @@ public static class ConfigLoader
         if (!File.Exists(stackPath))
             throw new FileNotFoundException($"Stack '{name}' not found", stackPath);
 
-        var toml = File.ReadAllText(stackPath, Encoding.UTF8);
-        TomlTable table;
-        try
-        {
-            table = Toml.ToModel(toml);
-        }
-        catch (TomlException ex)
-        {
-            throw new InvalidOperationException($"Stack '{name}' has invalid TOML: {ex.Message}", ex);
-        }
+        var table = ParseTomlFile(name, stackPath);
 
         if (!table.ContainsKey("trunk"))
             throw new InvalidOperationException($"Stack '{name}' is missing required field 'trunk'");
@@ -89,32 +80,42 @@ public static class ConfigLoader
         {
             Name = table.TryGetValue("name", out var n) && n is string nameStr ? nameStr : name,
             Trunk = trunkValue,
+            CreatedAt = ParseTomlDateTime(table, "created_at"),
+            UpdatedAt = ParseTomlDateTime(table, "updated_at"),
         };
 
         Validation.ValidateStackName(stack.Name);
 
-        if (table.TryGetValue("created_at", out var createdAt))
-        {
-            if (createdAt is string createdAtStr)
-                stack.CreatedAt = DateTime.Parse(createdAtStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-            else if (createdAt is TomlDateTime dt)
-                stack.CreatedAt = dt.DateTime.DateTime;
-        }
-
-        if (table.TryGetValue("updated_at", out var updatedAt))
-        {
-            if (updatedAt is string updatedAtStr)
-                stack.UpdatedAt = DateTime.Parse(updatedAtStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-            else if (updatedAt is TomlDateTime dt2)
-                stack.UpdatedAt = dt2.DateTime.DateTime;
-        }
-
         if (table.TryGetValue("branches", out var branchesObj) && branchesObj is TomlTableArray branches)
-        {
             stack.Branches.AddRange(ParseBranches(name, branches));
-        }
 
         return stack;
+    }
+
+    private static TomlTable ParseTomlFile(string name, string stackPath)
+    {
+        var toml = File.ReadAllText(stackPath, Encoding.UTF8);
+        try
+        {
+            return Toml.ToModel(toml);
+        }
+        catch (TomlException ex)
+        {
+            throw new InvalidOperationException($"Stack '{name}' has invalid TOML: {ex.Message}", ex);
+        }
+    }
+
+    private static DateTime ParseTomlDateTime(TomlTable table, string key)
+    {
+        if (!table.TryGetValue(key, out var value))
+            return default;
+
+        return value switch
+        {
+            string str => DateTime.Parse(str, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+            TomlDateTime dt => dt.DateTime.DateTime,
+            _ => default,
+        };
     }
 
     /// <summary>
