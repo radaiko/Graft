@@ -262,4 +262,56 @@ public sealed class AutoFetcherTests : IDisposable
 
         Assert.Null(loaded.Repos[0].LastFetched);
     }
+
+    // ========================
+    // Additional edge cases
+    // ========================
+
+    [Fact]
+    public void Disable_NonexistentPath_Throws()
+    {
+        var cache = new RepoCache();
+        ConfigLoader.SaveRepoCache(cache, _configDir);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            AutoFetcher.Disable("/tmp/nonexistent", _configDir));
+        Assert.Contains("not found in cache", ex.Message);
+    }
+
+    [Fact]
+    public void DisableByName_NonexistentRepo_Throws()
+    {
+        var cache = new RepoCache();
+        ConfigLoader.SaveRepoCache(cache, _configDir);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            AutoFetcher.DisableByName("no-such-repo", _configDir));
+        Assert.Contains("not found in cache", ex.Message);
+    }
+
+    [Fact]
+    public void EnableByName_MultipleMatches_ThrowsAmbiguity()
+    {
+        var cache = new RepoCache();
+        cache.Repos.Add(new CachedRepo { Name = "MyRepo", Path = "/tmp/a/MyRepo" });
+        cache.Repos.Add(new CachedRepo { Name = "myrepo", Path = "/tmp/b/myrepo" });
+        ConfigLoader.SaveRepoCache(cache, _configDir);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            AutoFetcher.EnableByName("myrepo", _configDir));
+        Assert.Contains("Multiple repos match", ex.Message);
+    }
+
+    [Fact]
+    public void DisableByName_MultipleMatches_ThrowsAmbiguity()
+    {
+        var cache = new RepoCache();
+        cache.Repos.Add(new CachedRepo { Name = "Dup", Path = "/tmp/a/Dup" });
+        cache.Repos.Add(new CachedRepo { Name = "dup", Path = "/tmp/b/dup" });
+        ConfigLoader.SaveRepoCache(cache, _configDir);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            AutoFetcher.DisableByName("dup", _configDir));
+        Assert.Contains("Multiple repos match", ex.Message);
+    }
 }

@@ -125,4 +125,123 @@ public sealed class GitRunnerTests : IDisposable
         await Assert.ThrowsAnyAsync<Exception>(async () =>
             await runner.RunAsync("status"));
     }
+
+    // GitResult.HasConflict with "CONFLICT" in stderr
+    [Fact]
+    public void HasConflict_WithConflictInStderr_ReturnsTrue()
+    {
+        var result = new GitResult(1, "", "CONFLICT (content): Merge conflict in file.cs");
+        Assert.True(result.HasConflict);
+    }
+
+    // GitResult.HasConflict with clean stderr
+    [Fact]
+    public void HasConflict_WithCleanStderr_ReturnsFalse()
+    {
+        var result = new GitResult(1, "", "fatal: some other error");
+        Assert.False(result.HasConflict);
+    }
+
+    // GitResult.HasConflict with success exit code
+    [Fact]
+    public void HasConflict_WithSuccessExitCode_ReturnsFalse()
+    {
+        var result = new GitResult(0, "success", "");
+        Assert.False(result.HasConflict);
+    }
+
+    // ResolveGitCommonDir for a regular repo
+    [Fact]
+    public void ResolveGitCommonDir_RegularRepo_ReturnsDotGit()
+    {
+        var gitDir = GitRunner.ResolveGitCommonDir(_repo.Path);
+        Assert.True(Directory.Exists(gitDir));
+        Assert.Equal(Path.Combine(_repo.Path, ".git"), gitDir);
+    }
+
+    // ResolveGitDir for a regular repo
+    [Fact]
+    public void ResolveGitDir_RegularRepo_ReturnsDotGit()
+    {
+        var gitDir = GitRunner.ResolveGitDir(_repo.Path);
+        Assert.Equal(Path.Combine(_repo.Path, ".git"), gitDir);
+    }
+
+    // ResolveGitCommonDir for a worktree returns common dir
+    [Fact]
+    public async Task ResolveGitCommonDir_Worktree_ReturnsMainDotGit()
+    {
+        var runner = new GitRunner(_repo.Path);
+        await runner.RunAsync("checkout", "-b", "wt-test-branch");
+        await runner.RunAsync("checkout", "master");
+
+        var repoName = Path.GetFileName(Path.GetFullPath(_repo.Path));
+        var parentDir = Path.GetDirectoryName(Path.GetFullPath(_repo.Path))!;
+        var wtPath = Path.Combine(parentDir, $"{repoName}.wt.wt-test-branch");
+
+        try
+        {
+            await runner.RunAsync("worktree", "add", wtPath, "wt-test-branch");
+
+            var commonDir = GitRunner.ResolveGitCommonDir(wtPath);
+            // Should resolve back to main repo's .git
+            var expected = Path.GetFullPath(Path.Combine(_repo.Path, ".git"));
+            var actual = Path.GetFullPath(commonDir);
+            Assert.True(
+                expected == actual ||
+                actual == "/private" + expected ||
+                expected == "/private" + actual,
+                $"Common dir should point to main .git: expected={expected}, actual={actual}");
+        }
+        finally
+        {
+            try { await runner.RunAsync("worktree", "remove", "--force", wtPath); } catch { }
+            if (Directory.Exists(wtPath)) Directory.Delete(wtPath, recursive: true);
+        }
+    }
+
+    // ResolveGitDir for a worktree returns per-worktree dir
+    [Fact]
+    public async Task ResolveGitDir_Worktree_ReturnsWorktreeSpecificDir()
+    {
+        var runner = new GitRunner(_repo.Path);
+        await runner.RunAsync("checkout", "-b", "wt-gitdir-branch");
+        await runner.RunAsync("checkout", "master");
+
+        var repoName = Path.GetFileName(Path.GetFullPath(_repo.Path));
+        var parentDir = Path.GetDirectoryName(Path.GetFullPath(_repo.Path))!;
+        var wtPath = Path.Combine(parentDir, $"{repoName}.wt.wt-gitdir-branch");
+
+        try
+        {
+            await runner.RunAsync("worktree", "add", wtPath, "wt-gitdir-branch");
+
+            var gitDir = GitRunner.ResolveGitDir(wtPath);
+            // Per-worktree dir should be different from common dir
+            var commonDir = GitRunner.ResolveGitCommonDir(wtPath);
+            Assert.NotEqual(Path.GetFullPath(gitDir), Path.GetFullPath(commonDir));
+        }
+        finally
+        {
+            try { await runner.RunAsync("worktree", "remove", "--force", wtPath); } catch { }
+            if (Directory.Exists(wtPath)) Directory.Delete(wtPath, recursive: true);
+        }
+    }
+
+    // ResolveGitCommonDir for non-git directory throws
+    [Fact]
+    public void ResolveGitCommonDir_NonGitDir_Throws()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"not-a-repo-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => GitRunner.ResolveGitCommonDir(tempDir));
+        }
+        finally
+        {
+            Directory.Delete(tempDir);
+        }
+    }
 }
