@@ -20,8 +20,7 @@ export default defineConfig({
     },
 
     nav: [
-      { text: 'GitHub', link: 'https://github.com/radaiko/Graft' },
-      { text: 'Download', link: 'https://github.com/radaiko/Graft/releases' },
+      { text: 'Download', link: '/#install' },
       { text: 'Portfolio', link: 'https://radaiko.github.io' },
     ],
 
