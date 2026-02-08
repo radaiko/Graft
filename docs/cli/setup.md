@@ -1,8 +1,5 @@
 ---
-layout: default
 title: Setup Commands
-parent: CLI Reference
-nav_order: 8
 ---
 
 # Setup Commands
@@ -98,11 +95,11 @@ $ graft ui
 Server started at http://localhost:5123
 ```
 
-See [Web UI](../web-ui) for details on the browser interface.
+See [Web UI](../web-ui.md) for details on the browser interface.
 
 ---
 
 ## See Also
 
-- [Web UI](../web-ui) — Browser-based interface for stacks and worktrees
-- [FAQ](../faq) — Auto-update details
+- [Web UI](../web-ui.md) — Browser-based interface for stacks and worktrees
+- [FAQ](../faq.md) — Auto-update details

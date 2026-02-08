@@ -1,8 +1,5 @@
 ---
-layout: default
 title: Nuke Commands
-parent: CLI Reference
-nav_order: 6
 ---
 
 # Nuke Commands
@@ -66,5 +63,5 @@ This is useful after squash-merging PRs on GitHub/GitLab, which deletes the remo
 
 ## See Also
 
-- [Stack Commands](stack) — Manage individual stacks
-- [Worktree Commands](worktree) — Manage individual worktrees
+- [Stack Commands](./stack.md) — Manage individual stacks
+- [Worktree Commands](./worktree.md) — Manage individual worktrees

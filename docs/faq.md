@@ -1,14 +1,12 @@
 ---
-layout: default
 title: FAQ
-nav_order: 5
 ---
 
 # Frequently Asked Questions
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>What does <code>graft stack sync</code> do?</strong></summary>
 
 In a stacked branch setup, each branch builds on the one below it:
@@ -41,13 +39,13 @@ Pushing auth/api... done.
 
 You can also sync a single branch: `graft stack sync auth/session`.
 
-See [Stack Commands](cli/stack#graft-stack-sync-branch) for the full reference.
+See [Stack Commands](./cli/stack.md#graft-stack-sync-branch) for the full reference.
 
 </details>
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>Why does Graft use merge instead of rebase?</strong></summary>
 
 Many stacked-branch tools use `git rebase`. Rebase rewrites history, which means:
@@ -71,7 +69,7 @@ The tradeoff is merge commits in your branch history. But since Graft is designe
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>Does Graft work with squash-merge PRs?</strong></summary>
 
 Yes — Graft is specifically designed for squash-merge workflows:
@@ -96,7 +94,7 @@ Git recognizes the changes are already present, so the merge is conflict-free.
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>What happens if sync hits a conflict?</strong></summary>
 
 Sync pauses and tells you exactly what to do:
@@ -123,13 +121,13 @@ Graft saves its state to `.git/graft/operation.toml`. After resolving:
 
 If another conflict occurs further up the stack, the process repeats.
 
-See [Conflict Resolution](cli/conflict) for the full workflow guide.
+See [Conflict Resolution](./cli/conflict.md) for the full workflow guide.
 
 </details>
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>What is an "active stack"?</strong></summary>
 
 Graft tracks which stack is "active." All stack commands (`push`, `pop`, `drop`, `shift`, `commit`, `sync`, `log`) operate on the active stack automatically.
@@ -154,7 +152,7 @@ Stored as plain text in `.git/graft/active-stack`.
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>How do worktrees work in Graft?</strong></summary>
 
 Git worktrees let you have multiple branches checked out in separate directories simultaneously. Graft simplifies this with a fixed naming convention.
@@ -190,13 +188,13 @@ gt wt remove feature/auth -f      # force-remove
 
 Worktrees are useful when working on multiple stack branches at the same time without switching.
 
-See [Worktree Commands](cli/worktree) for the full reference.
+See [Worktree Commands](./cli/worktree.md) for the full reference.
 
 </details>
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>What happens when I commit to a lower branch?</strong></summary>
 
 `graft stack commit -b <branch>` commits to any branch in the stack:
@@ -222,7 +220,7 @@ If something goes wrong (e.g. checkout fails), your changes are preserved in a g
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>Can I use Graft with existing branches?</strong></summary>
 
 Yes. You can add existing branches to a stack:
@@ -239,7 +237,7 @@ The branches must already exist in git. Graft adds them to its metadata — it d
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>Can I have multiple stacks?</strong></summary>
 
 Yes. Each stack has its own trunk branch and set of branches.
@@ -261,7 +259,7 @@ Branches can only belong to one stack at a time.
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>What if I delete a branch outside of Graft?</strong></summary>
 
 If you delete a git branch that's part of a stack (e.g. with `git branch -D`), Graft won't automatically detect this. The stack metadata still references the branch.
@@ -278,7 +276,7 @@ Or if you've deleted many branches, `graft nuke stack` removes all stack definit
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>Does Graft auto-update?</strong></summary>
 
 Yes. Graft checks for updates in the background (at most once per hour). When a new version is found, it's downloaded to `~/.config/graft/staging/` and verified with a SHA-256 checksum.
@@ -289,13 +287,13 @@ Check manually: `graft update`.
 
 No telemetry or usage data is collected. The only network request is a GitHub API call to check for new releases.
 
-See [Setup Commands](cli/setup#auto-update) for more details.
+See [Setup Commands](./cli/setup.md#auto-update) for more details.
 
 </details>
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>Does Graft work with GitHub / GitLab / Azure DevOps?</strong></summary>
 
 Graft works with any git hosting platform. It operates on local git branches and pushes to whatever remote you have configured.
@@ -312,7 +310,7 @@ You create and manage PRs through your hosting platform's UI or CLI — Graft ha
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>How does repo scanning work?</strong></summary>
 
 Graft can discover git repositories across your machine. Register directories with `graft scan add`:
@@ -325,18 +323,18 @@ graft scan add ~/dev/work
 On every `graft` invocation, a background thread scans registered paths for git repos. The scan is non-blocking — your command runs immediately. Results are cached in `~/.config/graft/repo-cache.toml`.
 
 Discovered repos power two features:
-- **`graft cd <name>`** — jump to any repo or worktree by name. See [Navigation](cli/navigation).
-- **`graft status`** — cross-repo overview of all discovered repos. See [Status](cli/status).
+- **`graft cd <name>`** — jump to any repo or worktree by name. See [Navigation](./cli/navigation.md).
+- **`graft status`** — cross-repo overview of all discovered repos. See [Status](./cli/status.md).
 
 Worktrees created with `graft wt` are automatically added to the cache. Stale entries (deleted repos) are pruned automatically.
 
-See [Scan & Discovery](cli/scan) for the full command reference.
+See [Scan & Discovery](./cli/scan.md) for the full command reference.
 
 </details>
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>What is auto-fetch?</strong></summary>
 
 Auto-fetch runs `git fetch --all --quiet` in the background on every `graft` invocation, keeping your repos up to date without manual fetching.
@@ -354,13 +352,13 @@ graft scan auto-fetch list
 
 Auto-fetch is rate-limited to once every 15 minutes per repo. Fetch failures are silently skipped — one repo failing doesn't block others.
 
-See [Scan & Discovery](cli/scan#auto-fetch-commands) for full details.
+See [Scan & Discovery](./cli/scan.md#auto-fetch-commands) for full details.
 
 </details>
 
 ---
 
-<details markdown="1">
+<details>
 <summary><strong>What does <code>graft status</code> show?</strong></summary>
 
 `graft status` gives a compact overview of all discovered repos:
@@ -382,6 +380,6 @@ Each repo shows: current branch, clean/dirty status, ahead/behind remote, active
 
 Use `graft status <reponame>` for detailed output including the full stack graph and worktree list.
 
-See [Status](cli/status) for full details.
+See [Status](./cli/status.md) for full details.
 
 </details>

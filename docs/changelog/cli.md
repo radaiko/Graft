@@ -1,8 +1,5 @@
 ---
-layout: default
 title: CLI
-parent: Changelog
-nav_order: 1
 ---
 
 # CLI Changelog

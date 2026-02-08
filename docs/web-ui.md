@@ -1,7 +1,5 @@
 ---
-layout: default
 title: Web UI
-nav_order: 4
 ---
 
 # Web UI
@@ -94,7 +92,7 @@ The UI communicates via a local REST API. These endpoints are available for scri
 
 ### Stack
 
-These endpoints correspond to the [Stack CLI commands](cli/stack).
+These endpoints correspond to the [Stack CLI commands](./cli/stack.md).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -112,7 +110,7 @@ These endpoints correspond to the [Stack CLI commands](cli/stack).
 
 ### Conflict Resolution
 
-These endpoints correspond to the [Conflict Resolution CLI commands](cli/conflict).
+These endpoints correspond to the [Conflict Resolution CLI commands](./cli/conflict.md).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -121,7 +119,7 @@ These endpoints correspond to the [Conflict Resolution CLI commands](cli/conflic
 
 ### Worktree
 
-These endpoints correspond to the [Worktree CLI commands](cli/worktree).
+These endpoints correspond to the [Worktree CLI commands](./cli/worktree.md).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -131,7 +129,7 @@ These endpoints correspond to the [Worktree CLI commands](cli/worktree).
 
 ### Nuke
 
-These endpoints correspond to the [Nuke CLI commands](cli/nuke).
+These endpoints correspond to the [Nuke CLI commands](./cli/nuke.md).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|

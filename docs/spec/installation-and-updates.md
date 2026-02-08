@@ -87,7 +87,7 @@ If replacement fails mid-operation:
 - If the new binary can't be moved into place, the backup is restored.
 - If both fail, the error tells the user where the backup is.
 
-See [Error Handling — Update Rollback](error-handling.md#update-rollback) for recovery details.
+See [Error Handling — Update Rollback](./error-handling.md#update-rollback) for recovery details.
 
 ### Path Validation
 
@@ -101,7 +101,7 @@ graft config set update.enabled false
 
 ### State File
 
-Update state is stored in `~/.config/graft/update-state.toml`. See [Data Storage — `update-state.toml`](data-storage.md) for the full schema.
+Update state is stored in `~/.config/graft/update-state.toml`. See [Data Storage — `update-state.toml`](./data-storage.md) for the full schema.
 
 ### Version String Validation
 

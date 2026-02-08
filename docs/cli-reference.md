@@ -1,8 +1,5 @@
 ---
-layout: default
 title: CLI Reference
-nav_order: 3
-has_children: true
 ---
 
 # CLI Reference
@@ -15,14 +12,14 @@ Complete command reference for the Graft CLI. Commands are grouped by function â
 
 | Group | Commands | Description |
 |-------|----------|-------------|
-| [Stack](cli/stack) | `init`, `list`, `switch`, `push`, `pop`, `drop`, `shift`, `commit`, `sync`, `log`, `remove` | Create, manage, and sync stacked branches |
-| [Worktree](cli/worktree) | `wt`, `wt remove`, `wt list` | Manage parallel checkouts with fixed naming |
-| [Scan & Discovery](cli/scan) | `scan add`, `scan remove`, `scan list`, `scan auto-fetch` | Register directories, discover repos, background fetch |
-| [Navigation](cli/navigation) | `cd` | Jump to repos and worktrees by name |
-| [Status](cli/status) | `status` | Cross-repo overview of all discovered repos |
-| [Nuke](cli/nuke) | `nuke`, `nuke wt`, `nuke stack`, `nuke branches` | Bulk cleanup operations |
-| [Conflict Resolution](cli/conflict) | `--continue`, `--abort` | Handle merge conflicts during sync |
-| [Setup](cli/setup) | `install`, `uninstall`, `update`, `version`, `ui` | Installation, aliases, and updates |
+| [Stack](./cli/stack.md) | `init`, `list`, `switch`, `push`, `pop`, `drop`, `shift`, `commit`, `sync`, `log`, `remove` | Create, manage, and sync stacked branches |
+| [Worktree](./cli/worktree.md) | `wt`, `wt remove`, `wt list` | Manage parallel checkouts with fixed naming |
+| [Scan & Discovery](./cli/scan.md) | `scan add`, `scan remove`, `scan list`, `scan auto-fetch` | Register directories, discover repos, background fetch |
+| [Navigation](./cli/navigation.md) | `cd` | Jump to repos and worktrees by name |
+| [Status](./cli/status.md) | `status` | Cross-repo overview of all discovered repos |
+| [Nuke](./cli/nuke.md) | `nuke`, `nuke wt`, `nuke stack`, `nuke branches` | Bulk cleanup operations |
+| [Conflict Resolution](./cli/conflict.md) | `--continue`, `--abort` | Handle merge conflicts during sync |
+| [Setup](./cli/setup.md) | `install`, `uninstall`, `update`, `version`, `ui` | Installation, aliases, and updates |
 
 ---
 

@@ -1,8 +1,5 @@
 ---
-layout: default
 title: Status
-parent: CLI Reference
-nav_order: 5
 ---
 
 # Status
@@ -64,14 +61,14 @@ Graft  ~/dev/projects/Graft
 
 ## Tips
 
-- **Requires scan paths**: Status only shows repos in the [scan cache](scan). Run `graft scan add <directory>` first.
+- **Requires scan paths**: Status only shows repos in the [scan cache](./scan.md). Run `graft scan add <directory>` first.
 - **Background scanning**: The repo list updates automatically in the background on every `graft` invocation.
-- **Quick navigation**: Spot a repo that needs attention? Jump to it with `graft cd <name>`. See [Navigation](navigation).
+- **Quick navigation**: Spot a repo that needs attention? Jump to it with `graft cd <name>`. See [Navigation](./navigation.md).
 
 ---
 
 ## See Also
 
-- [Scan & Discovery](scan) — Register directories to discover repos
-- [Navigation](navigation) — Jump to repos from the status overview
-- [Stack Commands](stack) — Manage stacks shown in status output
+- [Scan & Discovery](./scan.md) — Register directories to discover repos
+- [Navigation](./navigation.md) — Jump to repos from the status overview
+- [Stack Commands](./stack.md) — Manage stacks shown in status output

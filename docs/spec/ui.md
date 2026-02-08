@@ -74,7 +74,7 @@ All mutation endpoints return the updated state so the frontend can refresh with
 
 All mutation endpoints (push, pop, drop, shift, sync, commit) operate on the active stack. The frontend ensures the correct stack is active before calling these.
 
-These endpoints wrap the stacking commands described in [spec.md](../spec.md).
+These endpoints wrap the stacking commands described in the [Product Specification](../spec.md).
 
 ### Sync Continue/Abort Endpoints
 
@@ -91,7 +91,7 @@ These endpoints wrap the stacking commands described in [spec.md](../spec.md).
 | POST | `/api/worktrees` | Add a worktree `{ "branch": "..." }` |
 | DELETE | `/api/worktrees/{branch}` | Remove a worktree |
 
-These endpoints wrap the worktree commands described in [spec.md](../spec.md).
+These endpoints wrap the worktree commands described in the [Product Specification](../spec.md).
 
 ### Nuke Endpoints
 
@@ -183,7 +183,7 @@ Sync responses with `hasConflict: true` trigger a conflict banner. Polling detec
 
 ### Error Responses
 
-API errors return `{ "error": "message" }` with appropriate HTTP status codes. The frontend shows a dismissable toast notification. Error messages come from Graft.Core and follow the what/why/how-to-fix format (see [Error Handling](error-handling.md)).
+API errors return `{ "error": "message" }` with appropriate HTTP status codes. The frontend shows a dismissable toast notification. Error messages come from Graft.Core and follow the what/why/how-to-fix format (see [Error Handling](./error-handling.md)).
 
 ### Repo Detection
 

@@ -153,7 +153,7 @@ List all registered scan paths.
 
 ### Background Scanning
 
-On every `graft` invocation, a background thread scans all registered paths for git repositories. The scan is non-blocking — the main command runs immediately. Results are cached in `~/.config/graft/repo-cache.toml` (see [Data Storage](spec/data-storage.md)).
+On every `graft` invocation, a background thread scans all registered paths for git repositories. The scan is non-blocking — the main command runs immediately. Results are cached in `~/.config/graft/repo-cache.toml` (see [Data Storage](./spec/data-storage.md)).
 
 - **Stale removal**: If a previously cached repo no longer exists on disk, it is automatically removed from the cache.
 - **Worktree integration**: `graft wt` automatically adds new worktrees to the repo cache. `graft wt remove` automatically removes them.
@@ -267,10 +267,10 @@ Abort an in-progress sync. Aborts the merge, restores the original branch, and d
 
 | Spec | Description |
 |------|-------------|
-| [Data Storage](spec/data-storage.md) | All TOML schemas, file layouts, name validation rules. |
-| [Error Handling](spec/error-handling.md) | Error format, conflict resolution flows, recovery scenarios. |
-| [Installation and Updates](spec/installation-and-updates.md) | Alias implementation, auto-update lifecycle. |
-| [Web UI](spec/ui.md) | Browser-based UI: architecture, API, views, state management. |
+| [Data Storage](./spec/data-storage.md) | All TOML schemas, file layouts, name validation rules. |
+| [Error Handling](./spec/error-handling.md) | Error format, conflict resolution flows, recovery scenarios. |
+| [Installation and Updates](./spec/installation-and-updates.md) | Alias implementation, auto-update lifecycle. |
+| [Web UI](./spec/ui.md) | Browser-based UI: architecture, API, views, state management. |
 
 ---
 

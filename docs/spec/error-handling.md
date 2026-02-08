@@ -65,7 +65,7 @@ Conflicts can occur during `graft stack sync` when merging branches.
 When `graft stack sync` encounters a conflict:
 
 1. The merge is left in progress on the conflicting branch.
-2. An `operation.toml` file is written recording the stack name, branch index, and original branch (see [Data Storage](data-storage.md)).
+2. An `operation.toml` file is written recording the stack name, branch index, and original branch (see [Data Storage](./data-storage.md)).
 3. Graft reports the conflicting files and exits.
 4. The user resolves conflicts manually, stages files with `git add`.
 5. `graft --continue` finishes the merge and continues to remaining branches.

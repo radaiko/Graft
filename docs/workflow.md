@@ -1,7 +1,5 @@
 ---
-layout: default
 title: Workflow Guide
-nav_order: 2
 ---
 
 # Stacked Branches Workflow
@@ -178,8 +176,9 @@ graft stack sync
 
 ## Conflict Handling
 
-{: .note }
-> Only `sync` can produce conflicts. All other commands modify metadata or commit changes — they never merge.
+::: info
+Only `sync` can produce conflicts. All other commands modify metadata or commit changes — they never merge.
+:::
 
 When `sync` hits a conflict:
 
@@ -240,8 +239,9 @@ What Graft does behind the scenes:
 5. Restore your stash
 ```
 
-{: .note }
-> Branches above the target become stale after this. Run `graft stack sync` to propagate the changes upward through the stack.
+::: info
+Branches above the target become stale after this. Run `graft stack sync` to propagate the changes upward through the stack.
+:::
 
 ---
 
@@ -294,8 +294,8 @@ The tradeoff is merge commits in your branch history. But since most teams **squ
 
 ## Next Steps
 
-- [Stack Commands](cli/stack) — Full reference for all stack operations
-- [Conflict Resolution](cli/conflict) — Detailed conflict handling guide
-- [Worktree Commands](cli/worktree) — Work on multiple branches simultaneously
-- [Scan & Discovery](cli/scan) — Register repos and enable auto-fetch
-- [FAQ](faq) — Common questions about stacked branches
+- [Stack Commands](./cli/stack.md) — Full reference for all stack operations
+- [Conflict Resolution](./cli/conflict.md) — Detailed conflict handling guide
+- [Worktree Commands](./cli/worktree.md) — Work on multiple branches simultaneously
+- [Scan & Discovery](./cli/scan.md) — Register repos and enable auto-fetch
+- [FAQ](./faq.md) — Common questions about stacked branches

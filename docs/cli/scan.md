@@ -1,13 +1,10 @@
 ---
-layout: default
 title: Scan & Discovery
-parent: CLI Reference
-nav_order: 3
 ---
 
 # Scan & Discovery
 
-Manage directories that Graft scans for git repositories. Discovered repos power [`graft cd`](navigation) and [`graft status`](status).
+Manage directories that Graft scans for git repositories. Discovered repos power [`graft cd`](./navigation.md) and [`graft status`](./status.md).
 
 ---
 
@@ -110,6 +107,6 @@ other-repo   on   last fetched 14 min ago
 
 ## See Also
 
-- [Navigation](navigation) — Use discovered repos with `graft cd`
-- [Status](status) — Cross-repo overview of discovered repos
-- [Worktree Commands](worktree) — Worktrees are auto-registered in the cache
+- [Navigation](./navigation.md) — Use discovered repos with `graft cd`
+- [Status](./status.md) — Cross-repo overview of discovered repos
+- [Worktree Commands](./worktree.md) — Worktrees are auto-registered in the cache

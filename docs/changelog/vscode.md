@@ -1,8 +1,5 @@
 ---
-layout: default
 title: VS Code Extension
-parent: Changelog
-nav_order: 2
 ---
 
 # VS Code Extension Changelog

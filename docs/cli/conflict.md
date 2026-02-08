@@ -1,8 +1,5 @@
 ---
-layout: default
 title: Conflict Resolution
-parent: CLI Reference
-nav_order: 7
 ---
 
 # Conflict Resolution
@@ -92,12 +89,12 @@ At any point, `graft --abort` cancels the entire operation and restores your ori
 ## Tips
 
 - **Check operation state**: If you're unsure whether a sync is in progress, look for `.git/graft/operation.toml`. If it exists, there's an unfinished operation.
-- **Web UI support**: The [Web UI](../web-ui) shows a conflict banner with Continue and Abort buttons when a sync is paused.
+- **Web UI support**: The [Web UI](../web-ui.md) shows a conflict banner with Continue and Abort buttons when a sync is paused.
 - **Standard git tools work**: During a conflict, you're in a normal git merge state. All your usual tools (VS Code merge editor, IntelliJ merge tool, etc.) work as expected.
 
 ---
 
 ## See Also
 
-- [Stack Commands](stack) — `graft stack sync` triggers the merge cascade
-- [Workflow Guide](../workflow#conflict-handling) — Conflicts in the context of a full workflow
+- [Stack Commands](./stack.md) — `graft stack sync` triggers the merge cascade
+- [Workflow Guide](../workflow.md#conflict-handling) — Conflicts in the context of a full workflow

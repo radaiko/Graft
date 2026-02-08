@@ -140,7 +140,7 @@ User-level configuration and update state, shared across all repos.
 
 ### `config.toml` — Global Configuration
 
-Includes scan paths for repo discovery (see [Scan Commands](../spec.md#scan-commands)).
+Includes scan paths for repo discovery (see [Scan Commands](../spec.md#scan-commands-1)).
 
 ```toml
 [[scan_paths]]

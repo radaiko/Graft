@@ -1,8 +1,5 @@
 ---
-layout: default
 title: Worktree Commands
-parent: CLI Reference
-nav_order: 2
 ---
 
 # Worktree Commands
@@ -57,7 +54,7 @@ Created branch 'feature/new-thing'.
 Created worktree at ../Graft.wt.feature-new-thing/
 ```
 
-New worktrees are automatically added to the [repo cache](scan) so they appear in `graft cd` and `graft status`.
+New worktrees are automatically added to the [repo cache](./scan.md) so they appear in `graft cd` and `graft status`.
 
 ---
 
@@ -90,14 +87,14 @@ $ graft wt list
 
 ## Tips
 
-- **Jump to worktrees**: Use `graft cd <branch>` to navigate to a worktree by branch name. See [Navigation](navigation).
+- **Jump to worktrees**: Use `graft cd <branch>` to navigate to a worktree by branch name. See [Navigation](./navigation.md).
 - **Worktrees + stacks**: Worktrees are independent of stacks. You can create a worktree for any branch, whether or not it's part of a stack.
-- **Bulk remove**: `graft nuke wt` removes all worktrees at once. See [Nuke Commands](nuke).
+- **Bulk remove**: `graft nuke wt` removes all worktrees at once. See [Nuke Commands](./nuke.md).
 
 ---
 
 ## See Also
 
-- [Navigation](navigation) — Jump to worktrees with `graft cd`
-- [Scan & Discovery](scan) — Worktrees are auto-registered in the repo cache
-- [Nuke Commands](nuke) — Bulk remove all worktrees
+- [Navigation](./navigation.md) — Jump to worktrees with `graft cd`
+- [Scan & Discovery](./scan.md) — Worktrees are auto-registered in the repo cache
+- [Nuke Commands](./nuke.md) — Bulk remove all worktrees

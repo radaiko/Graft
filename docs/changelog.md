@@ -1,8 +1,5 @@
 ---
-layout: default
 title: Changelog
-nav_order: 6
-has_children: true
 ---
 
 # Changelog
@@ -11,7 +8,7 @@ Release notes for each Graft product. Download binaries from the [GitHub Release
 
 | Product | Latest | Changelog |
 |---------|--------|-----------|
-| CLI | 0.2.2 | [View](changelog/cli) |
-| VS Code Extension | 0.1.0 | [View](changelog/vscode) |
-| Visual Studio | 0.1.0 | [View](changelog/vs) |
-| JetBrains Plugin | Planned | [View](changelog/jetbrains) |
+| CLI | 0.2.2 | [View](./changelog/cli.md) |
+| VS Code Extension | 0.1.0 | [View](./changelog/vscode.md) |
+| Visual Studio | 0.1.0 | [View](./changelog/vs.md) |
+| JetBrains Plugin | Planned | [View](./changelog/jetbrains.md) |

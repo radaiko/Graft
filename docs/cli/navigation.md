@@ -1,8 +1,5 @@
 ---
-layout: default
 title: Navigation
-parent: CLI Reference
-nav_order: 4
 ---
 
 # Navigation
@@ -41,7 +38,7 @@ The shell function is set up automatically by `graft install`. If you're using `
 
 ## Tips
 
-- **Register scan paths first**: `graft cd` only finds repos that are in the [scan cache](scan). Run `graft scan add <directory>` to register your project directories.
+- **Register scan paths first**: `graft cd` only finds repos that are in the [scan cache](./scan.md). Run `graft scan add <directory>` to register your project directories.
 - **Worktrees included automatically**: Worktrees created with `graft wt` are added to the cache, so `graft cd <branch>` works immediately.
 - **Case-insensitive matching**: Repo name matching is case-insensitive.
 
@@ -49,6 +46,6 @@ The shell function is set up automatically by `graft install`. If you're using `
 
 ## See Also
 
-- [Scan & Discovery](scan) — Register directories to discover repos
-- [Status](status) — See all discovered repos at a glance
-- [Worktree Commands](worktree) — Create worktrees to navigate to
+- [Scan & Discovery](./scan.md) — Register directories to discover repos
+- [Status](./status.md) — See all discovered repos at a glance
+- [Worktree Commands](./worktree.md) — Create worktrees to navigate to

@@ -1,8 +1,5 @@
 ---
-layout: default
 title: Stack Commands
-parent: CLI Reference
-nav_order: 1
 ---
 
 # Stack Commands
@@ -143,8 +140,9 @@ When committing to a branch other than the current one, Graft:
 4. Returns to your original branch
 5. Restores your stash
 
-{: .note }
-> Branches above the target become stale after a cross-branch commit. Run `graft stack sync` to propagate changes upward.
+::: info
+Branches above the target become stale after a cross-branch commit. Run `graft stack sync` to propagate changes upward.
+:::
 
 ---
 
@@ -164,7 +162,7 @@ Pushing feature/api... done.
 $ graft stack sync feature/auth
 ```
 
-If a merge conflict occurs, sync pauses. See [Conflict Resolution](conflict) for how to continue or abort.
+If a merge conflict occurs, sync pauses. See [Conflict Resolution](./conflict.md) for how to continue or abort.
 
 ---
 
@@ -195,7 +193,7 @@ Removed stack 'my-feature'.
 
 ## Tips
 
-- **Drop after squash-merge**: When a PR is squash-merged, `drop` the branch and `sync` to propagate changes upward. See the [Workflow Guide](../workflow#6-when-featurea-gets-squash-merged) for a walkthrough.
+- **Drop after squash-merge**: When a PR is squash-merged, `drop` the branch and `sync` to propagate changes upward. See the [Workflow Guide](../workflow.md#_6-when-feature-a-gets-squash-merged) for a walkthrough.
 - **Active stack auto-selection**: If exactly one stack exists, it's used automatically — no need to `switch`.
 - **Multiple stacks**: You can have stacks on different trunk branches (e.g. one on `main`, another on `release/2.0`). Branches can only belong to one stack at a time.
 
@@ -203,6 +201,6 @@ Removed stack 'my-feature'.
 
 ## See Also
 
-- [Workflow Guide](../workflow) — Full stacked branches walkthrough
-- [Conflict Resolution](conflict) — Handle merge conflicts during sync
-- [Nuke Commands](nuke) — Bulk remove all stacks
+- [Workflow Guide](../workflow.md) — Full stacked branches walkthrough
+- [Conflict Resolution](./conflict.md) — Handle merge conflicts during sync
+- [Nuke Commands](./nuke.md) — Bulk remove all stacks

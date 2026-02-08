@@ -1,7 +1,5 @@
 ---
-layout: default
 title: Home
-nav_order: 1
 ---
 
 # Graft
@@ -100,39 +98,39 @@ Update `feature/api-layer`'s PR to target `main`. Done.
 
 | Command | Description |
 |---------|-------------|
-| [`gt stack init`](cli/stack#graft-stack-init-name--b--base-branch) | Create a new stack on the current branch |
-| [`gt stack push -c`](cli/stack#graft-stack-push-branch--c--create) | Create a branch and add it to the top of the stack |
-| [`gt stack log`](cli/stack#graft-stack-log) | Display a visual graph of the stack |
-| [`gt stack sync`](cli/stack#graft-stack-sync-branch) | Merge the entire stack bottom-to-top, then push |
-| [`gt stack commit`](cli/stack#graft-stack-commit---message-message--b-branch---amend-alias-ci) | Commit staged changes to any branch in the stack |
-| [`gt stack remove`](cli/stack#graft-stack-remove-name--f--force-alias-rm) | Remove a stack definition (git branches are kept) |
+| [`gt stack init`](./cli/stack.md#graft-stack-init-name--b--base-branch) | Create a new stack on the current branch |
+| [`gt stack push -c`](./cli/stack.md#graft-stack-push-branch--c--create) | Create a branch and add it to the top of the stack |
+| [`gt stack log`](./cli/stack.md#graft-stack-log) | Display a visual graph of the stack |
+| [`gt stack sync`](./cli/stack.md#graft-stack-sync-branch) | Merge the entire stack bottom-to-top, then push |
+| [`gt stack commit`](./cli/stack.md#graft-stack-commit---message-message--b-branch---amend-alias-ci) | Commit staged changes to any branch in the stack |
+| [`gt stack remove`](./cli/stack.md#graft-stack-remove-name--f--force-alias-rm) | Remove a stack definition (git branches are kept) |
 
 ### Worktree Management
 
 | Command | Description |
 |---------|-------------|
-| [`gt wt <branch>`](cli/worktree#graft-wt-branch--c--create) | Create a worktree for an existing branch |
-| [`gt wt <branch> -c`](cli/worktree#graft-wt-branch--c--create) | Create a new branch + worktree |
-| [`gt wt remove`](cli/worktree#graft-wt-remove-branch--f--force-alias-rm) | Remove a worktree |
-| [`gt wt list`](cli/worktree#graft-wt-list-alias-ls) | List all worktrees |
+| [`gt wt <branch>`](./cli/worktree.md#graft-wt-branch--c--create) | Create a worktree for an existing branch |
+| [`gt wt <branch> -c`](./cli/worktree.md#graft-wt-branch--c--create) | Create a new branch + worktree |
+| [`gt wt remove`](./cli/worktree.md#graft-wt-remove-branch--f--force-alias-rm) | Remove a worktree |
+| [`gt wt list`](./cli/worktree.md#graft-wt-list-alias-ls) | List all worktrees |
 
 ### Repo Discovery & Navigation
 
 | Command | Description |
 |---------|-------------|
-| [`gt scan add`](cli/scan#graft-scan-add-directory) | Register a directory for repo scanning |
-| [`gt scan auto-fetch`](cli/scan#auto-fetch-commands) | Enable/disable background git fetch per repo |
-| [`gt cd <name>`](cli/navigation#graft-cd-name) | Jump to any repo or worktree by name |
-| [`gt status`](cli/status#graft-status-alias-st) | Cross-repo overview of all discovered repos |
+| [`gt scan add`](./cli/scan.md#graft-scan-add-directory) | Register a directory for repo scanning |
+| [`gt scan auto-fetch`](./cli/scan.md#auto-fetch-commands) | Enable/disable background git fetch per repo |
+| [`gt cd <name>`](./cli/navigation.md#graft-cd-name) | Jump to any repo or worktree by name |
+| [`gt status`](./cli/status.md#graft-status-alias-st) | Cross-repo overview of all discovered repos |
 
 ### Setup
 
 | Command | Description |
 |---------|-------------|
-| [`gt install`](cli/setup#graft-install) | Create `gt` symlink and `git gt` alias |
-| [`gt update`](cli/setup#graft-update) | Check for and apply updates |
-| [`gt version`](cli/setup#graft-version) | Print current version |
-| [`gt ui`](cli/setup#graft-ui) | Open the browser-based [web UI](web-ui) |
+| [`gt install`](./cli/setup.md#graft-install) | Create `gt` symlink and `git gt` alias |
+| [`gt update`](./cli/setup.md#graft-update) | Check for and apply updates |
+| [`gt version`](./cli/setup.md#graft-version) | Print current version |
+| [`gt ui`](./cli/setup.md#graft-ui) | Open the browser-based [web UI](./web-ui.md) |
 
 ---
 
@@ -150,17 +148,17 @@ No .NET runtime required — Graft compiles to a native AOT binary.
 
 ## Learn More
 
-- [Workflow Guide](workflow) — Full stacked branches walkthrough
-- [CLI Reference](cli-reference) — Complete command reference
-  - [Stack Commands](cli/stack) — Create, manage, and sync stacked branches
-  - [Worktree Commands](cli/worktree) — Parallel checkouts with fixed naming
-  - [Scan & Discovery](cli/scan) — Repo scanning and auto-fetch
-  - [Navigation](cli/navigation) — Jump to repos and worktrees
-  - [Status](cli/status) — Cross-repo status overview
-  - [Nuke Commands](cli/nuke) — Bulk cleanup operations
-  - [Conflict Resolution](cli/conflict) — Handle merge conflicts during sync
-  - [Setup Commands](cli/setup) — Install, update, and aliases
-- [Web UI](web-ui) — Browser-based interface
-- [FAQ](faq) — Common questions
-- [Changelog](changelog) — What changed in each version
+- [Workflow Guide](./workflow.md) — Full stacked branches walkthrough
+- [CLI Reference](./cli-reference.md) — Complete command reference
+  - [Stack Commands](./cli/stack.md) — Create, manage, and sync stacked branches
+  - [Worktree Commands](./cli/worktree.md) — Parallel checkouts with fixed naming
+  - [Scan & Discovery](./cli/scan.md) — Repo scanning and auto-fetch
+  - [Navigation](./cli/navigation.md) — Jump to repos and worktrees
+  - [Status](./cli/status.md) — Cross-repo status overview
+  - [Nuke Commands](./cli/nuke.md) — Bulk cleanup operations
+  - [Conflict Resolution](./cli/conflict.md) — Handle merge conflicts during sync
+  - [Setup Commands](./cli/setup.md) — Install, update, and aliases
+- [Web UI](./web-ui.md) — Browser-based interface
+- [FAQ](./faq.md) — Common questions
+- [Changelog](./changelog.md) — What changed in each version
 - [Source Code](https://github.com/radaiko/Graft)
