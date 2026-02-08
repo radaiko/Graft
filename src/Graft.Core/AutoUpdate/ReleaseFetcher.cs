@@ -17,7 +17,8 @@ public static class ReleaseFetcher
         Timeout = TimeSpan.FromSeconds(30),
     };
 
-    private const string GitHubReleasesApiUrl = "https://api.github.com/repos/radaiko/Graft/releases";
+    // Intentionally hardcoded: this is the canonical release endpoint for this project
+    private static readonly Uri GitHubReleasesApiUrl = new("https://api.github.com/repos/radaiko/Graft/releases");
 
     /// <summary>
     /// Fetches the latest non-draft cli/v* release from GitHub.
@@ -25,7 +26,7 @@ public static class ReleaseFetcher
     /// </summary>
     public static async Task<(Version Version, List<GitHubAsset> Assets)?> FetchLatestVersionAsync()
     {
-        using var response = await Http.GetAsync(GitHubReleasesApiUrl);
+        using var response = await Http.GetAsync(GitHubReleasesApiUrl, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
 
         var releases = await JsonSerializer.DeserializeAsync(

@@ -20,7 +20,7 @@ esac
 RID="${os}-${arch}"
 
 # Get latest CLI version from GitHub API
-LATEST=$(curl -fsSL "https://api.github.com/repos/radaiko/Graft/releases" \
+LATEST=$(curl -fsSL --proto '=https' "https://api.github.com/repos/radaiko/Graft/releases" \
   | grep -o '"tag_name": "cli/v[^"]*"' | head -1 | sed 's/.*cli\/v//;s/"//')
 
 if [[ -z "$LATEST" ]]; then
@@ -33,7 +33,7 @@ echo "Installing Graft CLI v${LATEST} (${RID})..."
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
-curl -fsSL "https://github.com/radaiko/Graft/releases/download/cli/v${LATEST}/graft-cli-v${LATEST}-${RID}.tar.gz" \
+curl -fsSL --proto '=https' "https://github.com/radaiko/Graft/releases/download/cli/v${LATEST}/graft-cli-v${LATEST}-${RID}.tar.gz" \
   -o "$TMPDIR/graft.tar.gz"
 tar xzf "$TMPDIR/graft.tar.gz" -C "$TMPDIR"
 

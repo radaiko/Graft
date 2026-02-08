@@ -180,103 +180,109 @@ public static class StackManager
         var git = new GitRunner(repoPath, ct);
         var result = new SyncResult { Trunk = stack.Trunk };
 
-        // Save original branch (or SHA if detached HEAD)
         var originalBranch = await ResolveOriginalBranchAsync(git);
-
-        // Fetch latest (if remote exists, ignore errors)
         await git.RunAsync("fetch", "--quiet");
 
-        // Determine which branches to sync
-        List<StackBranch> branchesToSync;
-        int startIdx;
-        if (branchName != null)
-        {
-            Validation.ValidateName(branchName, BranchNameLabel);
-            var idx = stack.Branches.FindIndex(b => b.Name == branchName);
-            if (idx < 0)
-                throw new InvalidOperationException($"Branch '{branchName}' is not in stack '{stackName}'");
-            branchesToSync = [stack.Branches[idx]];
-            startIdx = idx;
-        }
-        else
-        {
-            branchesToSync = stack.Branches;
-            startIdx = 0;
-        }
-
-        // Track branches that were merged (for pushing)
+        var (branchesToSync, startIdx) = ResolveBranchesToSync(stack, stackName, branchName);
         var mergedBranches = new List<string>();
-
-        // Detect branches checked out in worktrees (merge there instead of checking out)
         var worktreeByBranch = await GetWorktreeBranchMapAsync(repoPath, ct);
 
         string parentBranch = startIdx > 0 ? stack.Branches[startIdx - 1].Name : stack.Trunk;
 
         foreach (var branch in branchesToSync)
         {
-            var branchResult = new BranchSyncResult { Name = branch.Name };
+            var branchResult = await SyncSingleBranchAsync(git, branch, parentBranch, stackName, worktreeByBranch, ct);
 
-            // Verify branch still exists
-            var branchExists = await git.RunAsync(RevParse, Verify, $"refs/heads/{branch.Name}");
-            if (!branchExists.Success)
-                throw new InvalidOperationException(
-                    $"Branch '{branch.Name}' in stack '{stackName}' no longer exists.\n" +
-                    $"Restore it with 'git branch {branch.Name} <commit>', or remove it with 'graft stack drop {branch.Name}'.");
-
-            var syncBranchResult = await TryMergeBranchAsync(git, parentBranch, branch, worktreeByBranch, ct);
-
-            if (syncBranchResult == null)
+            if (branchResult.Status == SyncStatus.Conflict)
             {
-                // Up to date
-                branchResult.Status = SyncStatus.UpToDate;
-                var countResult = await git.RunAsync("rev-list", "--count", $"{parentBranch}..{branch.Name}");
-                if (countResult.Success && int.TryParse(countResult.Stdout.Trim(), out var count))
-                    branchResult.CommitCount = count;
-            }
-            else if (syncBranchResult.Value.Success)
-            {
-                branchResult.Status = SyncStatus.Merged;
-                mergedBranches.Add(branch.Name);
-                var countResult = await git.RunAsync("rev-list", "--count", $"{parentBranch}..{branch.Name}");
-                if (countResult.Success && int.TryParse(countResult.Stdout.Trim(), out var count))
-                    branchResult.CommitCount = count;
-            }
-            else
-            {
-                branchResult.Status = SyncStatus.Conflict;
-                branchResult.ConflictingFiles = syncBranchResult.Value.ConflictingFiles;
-
                 var branchIdx = stack.Branches.FindIndex(b => b.Name == branch.Name);
                 int? syncUpTo = branchName != null ? branchIdx : null;
-                SaveOperationState(repoPath, stackName, branchIdx, originalBranch, syncUpTo, syncBranchResult.Value.WorktreePath);
-
+                SaveOperationState(repoPath, stackName, branchIdx, originalBranch, syncUpTo, branchResult.WorktreePath);
                 result.BranchResults.Add(branchResult);
                 result.HasConflict = true;
                 break;
             }
 
+            if (branchResult.Status == SyncStatus.Merged)
+                mergedBranches.Add(branch.Name);
+
             result.BranchResults.Add(branchResult);
             parentBranch = branch.Name;
         }
 
-        // After all merges succeed, push each merged branch
-        if (!result.HasConflict)
-            await PushMergedBranchesAsync(git, mergedBranches, result);
-
-        // Return to original branch if no conflict
         if (!result.HasConflict)
         {
+            await PushMergedBranchesAsync(git, mergedBranches, result);
             ClearOperationState(repoPath);
-            var checkoutResult = await git.RunAsync(Checkout, originalBranch);
-            if (!checkoutResult.Success)
-                throw new InvalidOperationException(
-                    $"Sync completed but failed to return to original branch '{originalBranch}': {checkoutResult.Stderr}");
+            await CheckoutOriginalBranchAsync(git, originalBranch);
         }
 
         stack.UpdatedAt = DateTime.UtcNow;
         ConfigLoader.SaveStack(stack, repoPath);
 
         return result;
+    }
+
+    private static (List<StackBranch> Branches, int StartIndex) ResolveBranchesToSync(
+        StackDefinition stack, string stackName, string? branchName)
+    {
+        if (branchName == null)
+            return (stack.Branches, 0);
+
+        Validation.ValidateName(branchName, BranchNameLabel);
+        var idx = stack.Branches.FindIndex(b => b.Name == branchName);
+        if (idx < 0)
+            throw new InvalidOperationException($"Branch '{branchName}' is not in stack '{stackName}'");
+        return ([stack.Branches[idx]], idx);
+    }
+
+    private static async Task<BranchSyncResult> SyncSingleBranchAsync(
+        GitRunner git, StackBranch branch, string parentBranch, string stackName,
+        Dictionary<string, string> worktreeByBranch, CancellationToken ct)
+    {
+        var branchResult = new BranchSyncResult { Name = branch.Name };
+
+        var branchExists = await git.RunAsync(RevParse, Verify, $"refs/heads/{branch.Name}");
+        if (!branchExists.Success)
+            throw new InvalidOperationException(
+                $"Branch '{branch.Name}' in stack '{stackName}' no longer exists.\n" +
+                $"Restore it with 'git branch {branch.Name} <commit>', or remove it with 'graft stack drop {branch.Name}'.");
+
+        var syncBranchResult = await TryMergeBranchAsync(git, parentBranch, branch, worktreeByBranch, ct);
+
+        if (syncBranchResult == null)
+        {
+            branchResult.Status = SyncStatus.UpToDate;
+        }
+        else if (syncBranchResult.Value.Success)
+        {
+            branchResult.Status = SyncStatus.Merged;
+        }
+        else
+        {
+            branchResult.Status = SyncStatus.Conflict;
+            branchResult.ConflictingFiles = syncBranchResult.Value.ConflictingFiles;
+            branchResult.WorktreePath = syncBranchResult.Value.WorktreePath;
+            return branchResult;
+        }
+
+        await PopulateCommitCountAsync(git, branchResult, parentBranch, branch.Name);
+        return branchResult;
+    }
+
+    private static async Task PopulateCommitCountAsync(GitRunner git, BranchSyncResult branchResult, string parentBranch, string branchName)
+    {
+        var countResult = await git.RunAsync("rev-list", "--count", $"{parentBranch}..{branchName}");
+        if (countResult.Success && int.TryParse(countResult.Stdout.Trim(), out var count))
+            branchResult.CommitCount = count;
+    }
+
+    private static async Task CheckoutOriginalBranchAsync(GitRunner git, string originalBranch)
+    {
+        var checkoutResult = await git.RunAsync(Checkout, originalBranch);
+        if (!checkoutResult.Success)
+            throw new InvalidOperationException(
+                $"Sync completed but failed to return to original branch '{originalBranch}': {checkoutResult.Stderr}");
     }
 
     /// <summary>
@@ -710,6 +716,11 @@ public sealed class BranchSyncResult
     public SyncStatus Status { get; set; }
     public int CommitCount { get; set; }
     public List<string> ConflictingFiles { get; set; } = [];
+    /// <summary>
+    /// If set, the conflicted branch was merged in this worktree path.
+    /// Used internally to track where to continue/abort the merge.
+    /// </summary>
+    internal string? WorktreePath { get; set; }
 }
 
 public enum SyncStatus

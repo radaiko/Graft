@@ -477,7 +477,7 @@ public static class StackCommand
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Error: {ex.Message}");
             Environment.ExitCode = 1;
         }
     }
