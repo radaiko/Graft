@@ -264,20 +264,28 @@ public static class ConfigLoader
         if (!File.Exists(configPath))
             return [];
 
-        var toml = File.ReadAllText(configPath, Encoding.UTF8);
-        var table = Toml.ToModel(toml);
-
-        var paths = new List<ScanPath>();
-        if (table.TryGetValue("scan_paths", out var scanPathsObj) && scanPathsObj is TomlTableArray scanPaths)
+        try
         {
-            foreach (TomlTable entry in scanPaths)
-            {
-                if (entry.TryGetValue("path", out var pathObj) && pathObj is string pathStr)
-                    paths.Add(new ScanPath { Path = pathStr });
-            }
-        }
+            var toml = File.ReadAllText(configPath, Encoding.UTF8);
+            var table = Toml.ToModel(toml);
 
-        return paths;
+            var paths = new List<ScanPath>();
+            if (table.TryGetValue("scan_paths", out var scanPathsObj) && scanPathsObj is TomlTableArray scanPaths)
+            {
+                foreach (var entry in scanPaths.OfType<TomlTable>())
+                {
+                    if (entry.TryGetValue("path", out var pathObj) && pathObj is string pathStr)
+                        paths.Add(new ScanPath { Path = pathStr });
+                }
+            }
+
+            return paths;
+        }
+        catch (TomlException ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to load config from '{configPath}'. The file may be corrupt. Fix or delete it and try again.", ex);
+        }
     }
 
     public static void SaveScanPaths(List<ScanPath> scanPaths, string configDir)
@@ -325,28 +333,36 @@ public static class ConfigLoader
         if (!File.Exists(cachePath))
             return new RepoCache();
 
-        var toml = File.ReadAllText(cachePath, Encoding.UTF8);
-        var table = Toml.ToModel(toml);
-
-        var cache = new RepoCache();
-        if (table.TryGetValue("repos", out var reposObj) && reposObj is TomlTableArray repos)
+        try
         {
-            foreach (TomlTable entry in repos)
+            var toml = File.ReadAllText(cachePath, Encoding.UTF8);
+            var table = Toml.ToModel(toml);
+
+            var cache = new RepoCache();
+            if (table.TryGetValue("repos", out var reposObj) && reposObj is TomlTableArray repos)
             {
-                if (entry.TryGetValue("name", out var nameObj) && nameObj is string name &&
-                    entry.TryGetValue("path", out var pathObj) && pathObj is string path)
+                foreach (var entry in repos.OfType<TomlTable>())
                 {
-                    var repo = new CachedRepo { Name = name, Path = path };
-                    if (entry.TryGetValue("branch", out var branchObj) && branchObj is string branch)
-                        repo.Branch = branch;
-                    if (entry.TryGetValue("auto_fetch", out var afObj) && afObj is bool af)
-                        repo.AutoFetch = af;
-                    cache.Repos.Add(repo);
+                    if (entry.TryGetValue("name", out var nameObj) && nameObj is string name &&
+                        entry.TryGetValue("path", out var pathObj) && pathObj is string path)
+                    {
+                        var repo = new CachedRepo { Name = name, Path = path };
+                        if (entry.TryGetValue("branch", out var branchObj) && branchObj is string branch)
+                            repo.Branch = branch;
+                        if (entry.TryGetValue("auto_fetch", out var afObj) && afObj is bool af)
+                            repo.AutoFetch = af;
+                        cache.Repos.Add(repo);
+                    }
                 }
             }
-        }
 
-        return cache;
+            return cache;
+        }
+        catch (TomlException ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to load repo cache from '{cachePath}'. The cache may be corrupt. Delete it and rerun to rebuild.", ex);
+        }
     }
 
     public static void SaveRepoCache(RepoCache cache, string configDir)
@@ -383,21 +399,51 @@ public static class ConfigLoader
             ? StringComparison.Ordinal
             : StringComparison.OrdinalIgnoreCase;
 
+    /// <summary>
+    /// Executes an action while holding an exclusive file lock on the repo cache.
+    /// Prevents lost-update races between background scan and foreground commands.
+    /// </summary>
+    public static void WithCacheLock(string configDir, Action action)
+    {
+        Directory.CreateDirectory(configDir);
+        var lockPath = Path.Combine(configDir, "repo-cache.lock");
+
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            try
+            {
+                using var lockFile = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                action();
+                return;
+            }
+            catch (IOException) when (attempt < 4)
+            {
+                Thread.Sleep(50 * (attempt + 1));
+            }
+        }
+    }
+
     public static void AddRepoToCache(CachedRepo repo, string configDir)
     {
-        var cache = LoadRepoCache(configDir);
-        // Avoid duplicates by path (case-insensitive on macOS/Windows)
-        if (cache.Repos.Any(r => string.Equals(r.Path, repo.Path, PathComparison)))
-            return;
-        cache.Repos.Add(repo);
-        SaveRepoCache(cache, configDir);
+        WithCacheLock(configDir, () =>
+        {
+            var cache = LoadRepoCache(configDir);
+            // Avoid duplicates by path (case-insensitive on macOS/Windows)
+            if (cache.Repos.Any(r => string.Equals(r.Path, repo.Path, PathComparison)))
+                return;
+            cache.Repos.Add(repo);
+            SaveRepoCache(cache, configDir);
+        });
     }
 
     public static void RemoveRepoFromCache(string repoPath, string configDir)
     {
-        var cache = LoadRepoCache(configDir);
-        var removed = cache.Repos.RemoveAll(r => string.Equals(r.Path, repoPath, PathComparison));
-        if (removed > 0)
-            SaveRepoCache(cache, configDir);
+        WithCacheLock(configDir, () =>
+        {
+            var cache = LoadRepoCache(configDir);
+            var removed = cache.Repos.RemoveAll(r => string.Equals(r.Path, repoPath, PathComparison));
+            if (removed > 0)
+                SaveRepoCache(cache, configDir);
+        });
     }
 }

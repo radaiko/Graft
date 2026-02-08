@@ -127,16 +127,25 @@ public static class ScanCommand
     private static void DoList()
     {
         var configDir = CliPaths.GetConfigDir();
-        var paths = ScanPathManager.List(configDir);
 
-        if (paths.Count == 0)
+        try
         {
-            Console.WriteLine("No scan paths registered. Use 'graft scan add <directory>' to add one.");
-            return;
-        }
+            var paths = ScanPathManager.List(configDir);
 
-        foreach (var p in paths)
-            Console.WriteLine(p.Path);
+            if (paths.Count == 0)
+            {
+                Console.WriteLine("No scan paths registered. Use 'graft scan add <directory>' to add one.");
+                return;
+            }
+
+            foreach (var p in paths)
+                Console.WriteLine(p.Path);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
     }
 
 }

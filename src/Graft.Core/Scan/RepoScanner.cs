@@ -57,9 +57,14 @@ public static class RepoScanner
                 return;
             }
 
-            foreach (var subDir in Directory.GetDirectories(dir))
+            var dirInfo = new DirectoryInfo(dir);
+            foreach (var subDirInfo in dirInfo.GetDirectories())
             {
-                var dirName = Path.GetFileName(subDir);
+                // Skip symlinks/junctions to avoid cycles
+                if (subDirInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    continue;
+
+                var dirName = subDirInfo.Name;
 
                 // Skip hidden directories
                 if (dirName.StartsWith('.'))
@@ -69,7 +74,7 @@ public static class RepoScanner
                 if (SkipDirs.Contains(dirName))
                     continue;
 
-                ScanRecursive(subDir, depth + 1, maxDepth, repos);
+                ScanRecursive(subDirInfo.FullName, depth + 1, maxDepth, repos);
             }
         }
         catch (UnauthorizedAccessException)
@@ -123,6 +128,11 @@ public static class RepoScanner
                 return null;
 
             var gitdir = gitdirLine["gitdir: ".Length..].Trim();
+
+            // Resolve relative gitdir paths (Git may write relative paths)
+            if (!Path.IsPathRooted(gitdir))
+                gitdir = Path.GetFullPath(Path.Combine(wtPath, gitdir));
+
             var worktreeHeadPath = Path.Combine(gitdir, "HEAD");
             if (!File.Exists(worktreeHeadPath))
                 return null;
@@ -150,6 +160,7 @@ public static class RepoScanner
         if (scanPaths.Count == 0)
             return;
 
+        // Discover repos outside the lock (scanning is slow, cache mutation is fast)
         var discovered = new List<CachedRepo>();
         foreach (var sp in scanPaths)
         {
@@ -157,27 +168,31 @@ public static class RepoScanner
                 discovered.AddRange(ScanDirectory(sp.Path));
         }
 
-        var cache = ConfigLoader.LoadRepoCache(configDir);
-
-        // Prune stale entries: remove repos whose path no longer exists
-        cache.Repos.RemoveAll(r => !Directory.Exists(r.Path));
-
-        // Merge new discoveries (avoid duplicates by path)
-        var existingByPath = cache.Repos.ToDictionary(r => r.Path, PathComparer);
-        var existingPaths = new HashSet<string>(existingByPath.Keys, PathComparer);
-        foreach (var repo in discovered)
+        // Lock during cache read-modify-write to prevent races with foreground commands
+        ConfigLoader.WithCacheLock(configDir, () =>
         {
-            if (!existingPaths.Contains(repo.Path))
-            {
-                cache.Repos.Add(repo);
-                existingPaths.Add(repo.Path);
-            }
-            else if (repo.Branch != null && existingByPath.TryGetValue(repo.Path, out var existing) && existing.Branch != repo.Branch)
-            {
-                existing.Branch = repo.Branch;
-            }
-        }
+            var cache = ConfigLoader.LoadRepoCache(configDir);
 
-        ConfigLoader.SaveRepoCache(cache, configDir);
+            // Prune stale entries: remove repos whose path no longer exists
+            cache.Repos.RemoveAll(r => !Directory.Exists(r.Path));
+
+            // Merge new discoveries (avoid duplicates by path)
+            var existingByPath = cache.Repos.ToDictionary(r => r.Path, PathComparer);
+            var existingPaths = new HashSet<string>(existingByPath.Keys, PathComparer);
+            foreach (var repo in discovered)
+            {
+                if (!existingPaths.Contains(repo.Path))
+                {
+                    cache.Repos.Add(repo);
+                    existingPaths.Add(repo.Path);
+                }
+                else if (repo.Branch != null && existingByPath.TryGetValue(repo.Path, out var existing) && existing.Branch != repo.Branch)
+                {
+                    existing.Branch = repo.Branch;
+                }
+            }
+
+            ConfigLoader.SaveRepoCache(cache, configDir);
+        });
     }
 }

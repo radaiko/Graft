@@ -10,16 +10,21 @@ public static class ScanPathManager
             ? StringComparison.Ordinal
             : StringComparison.OrdinalIgnoreCase;
 
+    private static string NormalizePath(string path)
+    {
+        return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
+
     public static void Add(string directory, string configDir)
     {
-        var resolved = Path.GetFullPath(directory);
+        var resolved = NormalizePath(directory);
 
         if (!Directory.Exists(resolved))
             throw new DirectoryNotFoundException($"Directory '{resolved}' does not exist.");
 
         var paths = ConfigLoader.LoadScanPaths(configDir);
 
-        if (paths.Any(p => string.Equals(p.Path, resolved, PathComparison)))
+        if (paths.Any(p => string.Equals(NormalizePath(p.Path), resolved, PathComparison)))
             throw new InvalidOperationException($"Scan path '{resolved}' is already registered.");
 
         paths.Add(new ScanPath { Path = resolved });
@@ -28,10 +33,10 @@ public static class ScanPathManager
 
     public static void Remove(string directory, string configDir)
     {
-        var resolved = Path.GetFullPath(directory);
+        var resolved = NormalizePath(directory);
 
         var paths = ConfigLoader.LoadScanPaths(configDir);
-        var removed = paths.RemoveAll(p => string.Equals(p.Path, resolved, PathComparison));
+        var removed = paths.RemoveAll(p => string.Equals(NormalizePath(p.Path), resolved, PathComparison));
 
         if (removed == 0)
             throw new InvalidOperationException($"Scan path '{resolved}' is not registered.");
