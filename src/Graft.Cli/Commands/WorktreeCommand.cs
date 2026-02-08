@@ -93,12 +93,15 @@ public static class WorktreeCommand
                 return;
             }
 
-            Console.Write($"Remove worktree for '{branch}'? [y/N] ");
-            var response = Console.ReadLine();
-            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+            if (!force)
             {
-                Console.WriteLine("Aborted.");
-                return;
+                Console.Write($"Remove worktree for '{branch}'? [y/N] ");
+                var response = Console.ReadLine();
+                if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Aborted.");
+                    return;
+                }
             }
 
             try
