@@ -28,6 +28,8 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 - **CLI:** `graft cd` (no args) — interactive fuzzy-search picker for all cached repos
 - **Core:** Fuzzy matcher for interactive filtering with subsequence scoring (consecutive, word-boundary, case bonuses)
 - **CLI:** Worktree create/remove now automatically updates the repo cache for `graft cd`
+- **CLI:** `graft status` — cross-repo status overview (branch, ahead/behind, changed files, stacks, worktrees) (#20)
+- **CLI:** `graft status <reponame>` — detailed status for a single repo with stack branch graph (#20)
 
 ### Deprecated
 - **CLI:** `graft wt goto` — use `graft cd` instead (command is now hidden, prints deprecation warning)

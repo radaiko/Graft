@@ -105,6 +105,10 @@ root.Add(ScanCommand.Create());
 // Navigation command
 root.Add(CdCommand.Create());
 
+// Status command
+root.Add(StatusCommand.Create());
+root.Add(StatusCommand.CreateAlias());
+
 // Setup commands
 root.Add(InstallCommand.Create());
 root.Add(UninstallCommand.Create());
