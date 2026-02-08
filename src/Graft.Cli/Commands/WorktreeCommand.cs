@@ -1,4 +1,6 @@
 using System.CommandLine;
+using Graft.Core.Config;
+using Graft.Core.Scan;
 using Graft.Core.Worktree;
 
 namespace Graft.Cli.Commands;
@@ -35,6 +37,20 @@ public static class WorktreeCommand
                 {
                     await WorktreeManager.AddAsync(branch, repoPath, create, ct);
                     Console.WriteLine($"Created worktree for '{branch}'");
+
+                    // Best-effort: add worktree to repo cache for graft cd
+                    try
+                    {
+                        var wtPath = WorktreeManager.GetWorktreePath(branch, repoPath);
+                        var configDir = CliPaths.GetConfigDir();
+                        ConfigLoader.AddRepoToCache(new CachedRepo
+                        {
+                            Name = Path.GetFileName(wtPath),
+                            Path = wtPath,
+                            Branch = branch,
+                        }, configDir);
+                    }
+                    catch { }
                 }
                 else
                 {
@@ -77,18 +93,28 @@ public static class WorktreeCommand
                 return;
             }
 
-            Console.Write($"Remove worktree for '{branch}'? [y/N] ");
-            var response = Console.ReadLine();
-            if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+            if (!force)
             {
-                Console.WriteLine("Aborted.");
-                return;
+                Console.Write($"Remove worktree for '{branch}'? [y/N] ");
+                var response = Console.ReadLine();
+                if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Aborted.");
+                    return;
+                }
             }
 
             try
             {
                 await WorktreeManager.RemoveAsync(branch, repoPath, force, ct);
                 Console.WriteLine($"Removed worktree for '{branch}'");
+
+                // Best-effort: remove worktree from repo cache
+                try
+                {
+                    ConfigLoader.RemoveRepoFromCache(wtPath, CliPaths.GetConfigDir());
+                }
+                catch { }
             }
             catch (Exception ex)
             {
@@ -132,10 +158,13 @@ public static class WorktreeCommand
         var branchArg = new Argument<string>("branch") { Description = "Branch whose worktree to navigate to" };
 
         var command = new Command("goto", "Print worktree path for shell cd");
+        command.Hidden = true;
         command.Add(branchArg);
 
         command.SetAction((parseResult) =>
         {
+            Console.Error.WriteLine("Warning: 'graft wt goto' is deprecated. Use 'graft cd <name>' instead.");
+
             var branch = parseResult.GetValue(branchArg)!;
             var repoPath = Directory.GetCurrentDirectory();
 
@@ -153,4 +182,5 @@ public static class WorktreeCommand
 
         return command;
     }
+
 }

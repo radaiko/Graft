@@ -11,6 +11,19 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ---
 
+## [0.3.0]
+
+### Added
+- **Core:** Repo scanner — register directories for automatic git repo discovery (`graft scan add/remove/list`) (#18)
+- **Core:** Repo cache — discovered repos cached in `~/.config/graft/repo-cache.toml` with background scanning on every invocation
+- **CLI:** `graft cd <name>` — unified navigation to repos and worktrees by name or branch
+- **CLI:** `graft cd` (no args) — interactive fuzzy-search picker for all cached repos
+- **Core:** Fuzzy matcher for interactive filtering with subsequence scoring (consecutive, word-boundary, case bonuses)
+- **CLI:** Worktree create/remove now automatically updates the repo cache for `graft cd`
+
+### Deprecated
+- **CLI:** `graft wt goto` — use `graft cd` instead (command is now hidden, prints deprecation warning)
+
 ## [0.2.2]
 
 ### Fixed
