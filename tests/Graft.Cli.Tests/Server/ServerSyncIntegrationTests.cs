@@ -8,6 +8,7 @@ namespace Graft.Cli.Tests.Server;
 /// <summary>
 /// Integration tests for sync endpoints using a repo that needs merging.
 /// </summary>
+[Collection("Server")]
 public sealed class ServerSyncIntegrationTests : IDisposable
 {
     private readonly TempCliRepo _repo;
@@ -25,7 +26,7 @@ public sealed class ServerSyncIntegrationTests : IDisposable
     public void Dispose()
     {
         _client.Dispose();
-        _server.Dispose();
+        try { _server.Dispose(); } catch { /* HttpListener may throw during cleanup */ }
         _repo.Dispose();
     }
 

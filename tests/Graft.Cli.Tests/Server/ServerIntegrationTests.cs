@@ -9,6 +9,7 @@ namespace Graft.Cli.Tests.Server;
 /// Integration tests for the web API server.
 /// Starts a real ApiServer on an auto-assigned port and exercises all HTTP endpoints.
 /// </summary>
+[Collection("Server")]
 public sealed class ServerIntegrationTests : IDisposable
 {
     private readonly TempCliRepo _repo;
@@ -26,7 +27,7 @@ public sealed class ServerIntegrationTests : IDisposable
     public void Dispose()
     {
         _client.Dispose();
-        _server.Dispose();
+        try { _server.Dispose(); } catch { /* HttpListener may throw during cleanup */ }
         // Clean up worktree siblings
         var parentDir = Path.GetDirectoryName(_repo.Path);
         var repoName = Path.GetFileName(_repo.Path);
