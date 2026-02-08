@@ -150,10 +150,6 @@ public static class ScanCommand
         }
     }
 
-    // ========================
-    // Auto-fetch subcommands
-    // ========================
-
     private static Command CreateAutoFetchCommand()
     {
         var command = new Command("auto-fetch", "Manage automatic background fetching for repos");
@@ -161,6 +157,7 @@ public static class ScanCommand
         command.Add(CreateAutoFetchEnableCommand());
         command.Add(CreateAutoFetchDisableCommand());
         command.Add(CreateAutoFetchListCommand());
+        command.Add(CreateAutoFetchListAlias());
 
         return command;
     }
@@ -208,6 +205,19 @@ public static class ScanCommand
     private static Command CreateAutoFetchListCommand()
     {
         var command = new Command("list", "List repos with their auto-fetch status");
+
+        command.SetAction(_ =>
+        {
+            DoAutoFetchList();
+        });
+
+        return command;
+    }
+
+    private static Command CreateAutoFetchListAlias()
+    {
+        var command = new Command("ls", "List repos with their auto-fetch status");
+        command.Hidden = true;
 
         command.SetAction(_ =>
         {

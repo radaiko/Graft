@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Graft.Core.Config;
 using Graft.Core.Git;
 
@@ -9,21 +10,18 @@ namespace Graft.Core.Scan;
 /// </summary>
 public static class AutoFetcher
 {
-    /// <summary>
-    /// Default interval between fetches for a single repo.
-    /// </summary>
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromMinutes(15);
 
-    /// <summary>
-    /// Timeout for each <c>git fetch --all</c> invocation.
-    /// </summary>
     private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(60);
+
+    private static readonly StringComparison PathComparison =
+        RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+            ? StringComparison.Ordinal
+            : StringComparison.OrdinalIgnoreCase;
 
     /// <summary>
     /// Fetches all repos that have auto-fetch enabled and are due for a fetch.
     /// Updates LastFetched timestamps in the repo cache on success.
-    /// Errors for individual repos are silently swallowed — a single repo failure
-    /// must never prevent other repos from being fetched.
     /// </summary>
     public static async Task FetchDueReposAsync(string configDir, CancellationToken ct = default)
     {
@@ -53,7 +51,7 @@ public static class AutoFetcher
             }
             catch (OperationCanceledException)
             {
-                throw; // Propagate cancellation
+                throw;
             }
             catch
             {
@@ -65,13 +63,12 @@ public static class AutoFetcher
         {
             ConfigLoader.WithCacheLock(configDir, () =>
             {
-                // Re-read the cache to merge with any concurrent changes,
-                // then apply only our LastFetched updates.
+                // Re-read to merge with concurrent changes, then apply only LastFetched updates.
                 var freshCache = ConfigLoader.LoadRepoCache(configDir);
                 foreach (var fetchedRepo in dueRepos.Where(r => r.LastFetched.HasValue))
                 {
                     var match = freshCache.Repos.Find(r =>
-                        string.Equals(r.Path, fetchedRepo.Path, StringComparison.Ordinal));
+                        string.Equals(r.Path, fetchedRepo.Path, PathComparison));
                     if (match != null)
                         match.LastFetched = fetchedRepo.LastFetched;
                 }
@@ -91,9 +88,6 @@ public static class AutoFetcher
             .ToList();
     }
 
-    /// <summary>
-    /// Enables auto-fetch for the repo at the given path in the cache.
-    /// </summary>
     public static void Enable(string repoPath, string configDir)
     {
         ConfigLoader.WithCacheLock(configDir, () =>
@@ -108,9 +102,6 @@ public static class AutoFetcher
         });
     }
 
-    /// <summary>
-    /// Disables auto-fetch for the repo at the given path in the cache.
-    /// </summary>
     public static void Disable(string repoPath, string configDir)
     {
         ConfigLoader.WithCacheLock(configDir, () =>
@@ -126,10 +117,6 @@ public static class AutoFetcher
         });
     }
 
-    /// <summary>
-    /// Enables auto-fetch for a repo found by name in the cache.
-    /// If multiple repos match the name, throws an error listing all matches.
-    /// </summary>
     public static void EnableByName(string name, string configDir)
     {
         ConfigLoader.WithCacheLock(configDir, () =>
@@ -141,9 +128,6 @@ public static class AutoFetcher
         });
     }
 
-    /// <summary>
-    /// Disables auto-fetch for a repo found by name in the cache.
-    /// </summary>
     public static void DisableByName(string name, string configDir)
     {
         ConfigLoader.WithCacheLock(configDir, () =>
@@ -178,6 +162,6 @@ public static class AutoFetcher
     private static CachedRepo? FindRepoByPath(RepoCache cache, string path)
     {
         return cache.Repos.Find(r =>
-            string.Equals(r.Path, path, StringComparison.Ordinal));
+            string.Equals(r.Path, path, PathComparison));
     }
 }

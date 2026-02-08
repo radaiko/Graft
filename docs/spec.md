@@ -174,7 +174,7 @@ Enable auto-fetch for a repository. If `<name>` is provided, looks up the repo b
 
 Disable auto-fetch for a repository. Same name/path resolution as `enable`. Also clears the `last_fetched` timestamp.
 
-#### `graft scan auto-fetch list`
+#### `graft scan auto-fetch list` (alias: `ls`)
 
 List all cached repos with their auto-fetch status (`on`/`off`) and last fetch time.
 
