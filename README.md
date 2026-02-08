@@ -1,5 +1,10 @@
 # Graft
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=radaiko_Graft&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=radaiko_Graft)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=radaiko_Graft&metric=coverage)](https://sonarcloud.io/summary/new_code?id=radaiko_Graft)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=radaiko_Graft&metric=bugs)](https://sonarcloud.io/summary/new_code?id=radaiko_Graft)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=radaiko_Graft&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=radaiko_Graft)
+
 A cross-platform CLI tool for managing stacked branches and git worktrees.
 
 ## What It Does
