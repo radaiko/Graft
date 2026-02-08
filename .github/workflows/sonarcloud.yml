@@ -45,11 +45,20 @@ jobs:
             /d:sonar.exclusions="**/wwwroot/**,**/bin/**,**/obj/**,**/frontend/node_modules/**"
 
       - name: Build
-        run: dotnet build src/Graft.sln --no-incremental
+        run: |
+          dotnet build src/Graft.Core/Graft.Core.csproj --no-incremental
+          dotnet build src/Graft.Cli/Graft.Cli.csproj --no-incremental
+          dotnet build tests/Graft.Core.Tests/Graft.Core.Tests.csproj --no-incremental
+          dotnet build tests/Graft.Cli.Tests/Graft.Cli.Tests.csproj --no-incremental
 
       - name: Test with coverage
         run: |
-          dotnet test src/Graft.sln \
+          dotnet test tests/Graft.Core.Tests/Graft.Core.Tests.csproj \
+            --no-build \
+            --logger trx \
+            --collect:"XPlat Code Coverage" \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          dotnet test tests/Graft.Cli.Tests/Graft.Cli.Tests.csproj \
             --no-build \
             --logger trx \
             --collect:"XPlat Code Coverage" \
