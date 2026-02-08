@@ -8,6 +8,14 @@ Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/item
 
 ---
 
+## [0.1.1]
+
+### Changed
+
+- Updated `Delete Stack` command to use `graft stack remove` (renamed from `del` in CLI v0.3.0)
+- Updated `Delete Worktree` context menu action to use `graft wt remove` (renamed from `del` in CLI v0.3.0)
+- Minimum required CLI version is now 0.3.0
+
 ## [0.1.0] -- Initial release
 
 ### Added

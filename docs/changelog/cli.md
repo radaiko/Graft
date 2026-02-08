@@ -8,7 +8,7 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ---
 
-## [0.3.0] -- Unreleased
+## [0.3.0]
 
 ### Added
 - **Core:** Repo scanner — register directories for automatic git repo discovery (`graft scan add/remove/list`) (#18)

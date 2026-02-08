@@ -6,6 +6,14 @@ title: Visual Studio
 
 ---
 
+## [0.1.1]
+
+### Changed
+
+- Updated Stack Explorer delete commands to use `graft stack remove` and `graft wt remove` (renamed from `del` in CLI v0.3.0)
+- Updated Tools > Graft menu entries to reflect renamed commands
+- Minimum required CLI version is now 0.3.0
+
 ## [0.1.0] -- Initial release
 
 ### Added
