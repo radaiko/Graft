@@ -176,28 +176,32 @@ static async Task HandleContinueAsync(CancellationToken ct)
     }
 
     // Fall back to raw git merge --continue
+    await ContinueGitMergeAsync(repoPath, ct);
+}
+
+static async Task ContinueGitMergeAsync(string repoPath, CancellationToken ct)
+{
     var git = new GitRunner(repoPath, ct);
     var gitDir = GitRunner.ResolveGitDir(repoPath);
     var mergeHead = Path.Combine(gitDir, "MERGE_HEAD");
 
-    if (File.Exists(mergeHead))
-    {
-        var result = await git.RunAsync("merge", "--continue");
-        if (result.Success)
-        {
-            Console.WriteLine("Merge continued successfully.");
-        }
-        else
-        {
-            await Console.Error.WriteLineAsync($"Error: {result.Stderr}");
-            await Console.Error.WriteLineAsync("Fix remaining conflicts, stage with 'git add', then run 'graft --continue' again.");
-            Environment.ExitCode = 1;
-        }
-    }
-    else
+    if (!File.Exists(mergeHead))
     {
         await Console.Error.WriteLineAsync("Error: No operation in progress to continue.");
         await Console.Error.WriteLineAsync("There is no merge in progress. Nothing to continue.");
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    var result = await git.RunAsync("merge", "--continue");
+    if (result.Success)
+    {
+        Console.WriteLine("Merge continued successfully.");
+    }
+    else
+    {
+        await Console.Error.WriteLineAsync($"Error: {result.Stderr}");
+        await Console.Error.WriteLineAsync("Fix remaining conflicts, stage with 'git add', then run 'graft --continue' again.");
         Environment.ExitCode = 1;
     }
 }

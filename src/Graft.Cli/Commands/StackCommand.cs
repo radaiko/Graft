@@ -487,10 +487,7 @@ public static class StackCommand
         var branchCheck = await git.RunAsync("rev-parse", "--verify", $"refs/heads/{branch.Name}");
         if (!branchCheck.Success)
         {
-            var branchChar2 = isLast ? "\u2514" : "\u251c";
-            Console.WriteLine($"{branchChar2}\u2500\u2500 {branch.Name} (branch missing!)");
-            if (!isLast)
-                Console.WriteLine("\u2502");
+            PrintMissingBranch(branch.Name, isLast);
             return;
         }
 
@@ -505,7 +502,23 @@ public static class StackCommand
         var branchChar = isLast ? "\u2514" : "\u251c";
         Console.WriteLine($"{branchChar}\u2500\u2500 {branch.Name} ({commitStr}){headStr}");
 
-        var logResult = await git.RunAsync("log", "--oneline", $"{parentBranch}..{branch.Name}");
+        await PrintCommitLog(git, parentBranch, branch.Name, isLast);
+
+        if (!isLast)
+            Console.WriteLine("\u2502");
+    }
+
+    private static void PrintMissingBranch(string branchName, bool isLast)
+    {
+        var branchChar = isLast ? "\u2514" : "\u251c";
+        Console.WriteLine($"{branchChar}\u2500\u2500 {branchName} (branch missing!)");
+        if (!isLast)
+            Console.WriteLine("\u2502");
+    }
+
+    private static async Task PrintCommitLog(GitRunner git, string parentBranch, string branchName, bool isLast)
+    {
+        var logResult = await git.RunAsync("log", "--oneline", $"{parentBranch}..{branchName}");
         if (logResult.Success && !string.IsNullOrWhiteSpace(logResult.Stdout))
         {
             var prefix = isLast ? "    " : "\u2502   ";
@@ -514,9 +527,6 @@ public static class StackCommand
                 Console.WriteLine($"{prefix}{line.Trim()}");
             }
         }
-
-        if (!isLast)
-            Console.WriteLine("\u2502");
     }
 
     private static Command CreateRemoveCommand()

@@ -131,43 +131,50 @@ public static class ConfigLoader
 
             Validation.ValidateName(branchName, "Branch name");
             var branch = new StackBranch { Name = branchName };
-            if (branchTable.TryGetValue("pr_number", out var prNum) &&
-                branchTable.TryGetValue("pr_url", out var prUrl) &&
-                prUrl is string prUrlStr)
-            {
-                ulong prNumber;
-                try
-                {
-                    prNumber = Convert.ToUInt64(prNum, CultureInfo.InvariantCulture);
-                }
-                catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
-                {
-                    throw new InvalidOperationException(
-                        $"Stack '{stackName}' branch '{branchName}' has invalid pr_number: expected an integer, got '{prNum}'", ex);
-                }
-
-                var prState = PrState.Open;
-                if (branchTable.TryGetValue("pr_state", out var stateObj) && stateObj is string stateStr)
-                {
-                    prState = stateStr switch
-                    {
-                        "merged" => PrState.Merged,
-                        "closed" => PrState.Closed,
-                        _ => PrState.Open,
-                    };
-                }
-
-                branch.Pr = new PullRequestRef
-                {
-                    Number = prNumber,
-                    Url = prUrlStr,
-                    State = prState,
-                };
-            }
+            branch.Pr = ParsePullRequestRef(stackName, branchName, branchTable);
             result.Add(branch);
         }
 
         return result;
+    }
+
+    private static PullRequestRef? ParsePullRequestRef(string stackName, string branchName, TomlTable branchTable)
+    {
+        if (!branchTable.TryGetValue("pr_number", out var prNum) ||
+            !branchTable.TryGetValue("pr_url", out var prUrl) ||
+            prUrl is not string prUrlStr)
+        {
+            return null;
+        }
+
+        ulong prNumber;
+        try
+        {
+            prNumber = Convert.ToUInt64(prNum, CultureInfo.InvariantCulture);
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
+        {
+            throw new InvalidOperationException(
+                $"Stack '{stackName}' branch '{branchName}' has invalid pr_number: expected an integer, got '{prNum}'", ex);
+        }
+
+        var prState = PrState.Open;
+        if (branchTable.TryGetValue("pr_state", out var stateObj) && stateObj is string stateStr)
+        {
+            prState = stateStr switch
+            {
+                "merged" => PrState.Merged,
+                "closed" => PrState.Closed,
+                _ => PrState.Open,
+            };
+        }
+
+        return new PullRequestRef
+        {
+            Number = prNumber,
+            Url = prUrlStr,
+            State = prState,
+        };
     }
 
     public static void SaveStack(StackDefinition stack, string repoPath)

@@ -1,5 +1,6 @@
 using Graft.Core.Config;
 using Graft.Core.Git;
+using Graft.Core.Stack;
 using Graft.Core.Worktree;
 
 namespace Graft.Core.Status;
@@ -173,40 +174,46 @@ public static class StatusCollector
                     IsActive = string.Equals(stackName, status.ActiveStackName, StringComparison.Ordinal),
                 };
 
-                // Get ahead/behind for each stack branch
-                for (int bi = 0; bi < stack.Branches.Count; bi++)
-                {
-                    var branch = stack.Branches[bi];
-                    var branchSummary = new StackBranchSummary { Name = branch.Name };
-
-                    var branchParent = bi == 0
-                        ? stack.Trunk
-                        : stack.Branches[bi - 1].Name;
-
-                    var branchAbResult = await git.RunAsync(
-                        "rev-list", "--left-right", "--count",
-                        $"refs/heads/{branch.Name}...refs/heads/{branchParent}");
-                    if (branchAbResult.Success)
-                    {
-                        var parts = branchAbResult.Stdout.Split('\t', StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length == 2
-                            && int.TryParse(parts[0], out var ahead)
-                            && int.TryParse(parts[1], out var behind))
-                        {
-                            branchSummary.Ahead = ahead;
-                            branchSummary.Behind = behind;
-                        }
-                    }
-
-                    summary.Branches.Add(branchSummary);
-                }
-
+                await CollectBranchSummariesAsync(git, stack, summary);
                 status.Stacks.Add(summary);
             }
             catch
             {
                 // Skip corrupt stack definitions
             }
+        }
+    }
+
+    /// <summary>
+    /// Collects ahead/behind stats for each branch in a stack.
+    /// </summary>
+    private static async Task CollectBranchSummariesAsync(GitRunner git, StackDefinition stack, StackSummary summary)
+    {
+        for (int bi = 0; bi < stack.Branches.Count; bi++)
+        {
+            var branch = stack.Branches[bi];
+            var branchSummary = new StackBranchSummary { Name = branch.Name };
+
+            var branchParent = bi == 0
+                ? stack.Trunk
+                : stack.Branches[bi - 1].Name;
+
+            var branchAbResult = await git.RunAsync(
+                "rev-list", "--left-right", "--count",
+                $"refs/heads/{branch.Name}...refs/heads/{branchParent}");
+            if (branchAbResult.Success)
+            {
+                var parts = branchAbResult.Stdout.Split('\t', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 2
+                    && int.TryParse(parts[0], out var ahead)
+                    && int.TryParse(parts[1], out var behind))
+                {
+                    branchSummary.Ahead = ahead;
+                    branchSummary.Behind = behind;
+                }
+            }
+
+            summary.Branches.Add(branchSummary);
         }
     }
 }

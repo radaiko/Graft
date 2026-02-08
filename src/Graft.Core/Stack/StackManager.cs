@@ -12,6 +12,15 @@ public static class StackManager
     private const string Merge = "merge";
     private const string BranchNameLabel = "Branch name";
 
+    private sealed class CascadeMergeContext
+    {
+        public required StackDefinition Stack { get; init; }
+        public required OperationState OpState { get; init; }
+        public required int EndIndex { get; init; }
+        public required Dictionary<string, string> WorktreeByBranch { get; init; }
+        public required string RepoPath { get; init; }
+    }
+
     public static async Task<StackDefinition> InitAsync(string name, string repoPath, string? baseBranch = null, CancellationToken ct = default)
     {
         Validation.ValidateStackName(name);
@@ -343,8 +352,15 @@ public static class StackManager
         // Detect worktrees for cascade
         var worktreeByBranch = await GetWorktreeBranchMapAsync(repoPath, ct);
 
-        var cascadeResult = await CascadeMergeAsync(
-            git, stack, opState, endIdx, worktreeByBranch, mergedBranches, result, repoPath, ct);
+        var cascadeCtx = new CascadeMergeContext
+        {
+            Stack = stack,
+            OpState = opState,
+            EndIndex = endIdx,
+            WorktreeByBranch = worktreeByBranch,
+            RepoPath = repoPath,
+        };
+        var cascadeResult = await CascadeMergeAsync(git, cascadeCtx, mergedBranches, result, ct);
         if (cascadeResult)
             return result;
 
@@ -489,19 +505,20 @@ public static class StackManager
     /// Returns true if a conflict was encountered (caller should return early).
     /// </summary>
     private static async Task<bool> CascadeMergeAsync(
-        GitRunner git, StackDefinition stack, OperationState opState, int endIdx,
-        Dictionary<string, string> worktreeByBranch, List<string> mergedBranches,
-        SyncResult result, string repoPath, CancellationToken ct)
+        GitRunner git, CascadeMergeContext ctx, List<string> mergedBranches,
+        SyncResult result, CancellationToken ct)
     {
+        var stack = ctx.Stack;
+        var opState = ctx.OpState;
         string parentBranch = stack.Branches[opState.BranchIndex].Name;
-        for (int i = opState.BranchIndex + 1; i < endIdx; i++)
+        for (int i = opState.BranchIndex + 1; i < ctx.EndIndex; i++)
         {
             var branch = stack.Branches[i];
             var branchResult = new BranchSyncResult { Name = branch.Name };
 
             GitRunner branchGit;
             string? branchWtPath = null;
-            if (worktreeByBranch.TryGetValue(branch.Name, out var cascadeWtPath))
+            if (ctx.WorktreeByBranch.TryGetValue(branch.Name, out var cascadeWtPath))
             {
                 branchGit = new GitRunner(cascadeWtPath, ct);
                 branchWtPath = cascadeWtPath;
@@ -534,7 +551,7 @@ public static class StackManager
                         .ToList();
                 }
 
-                SaveOperationState(repoPath, opState.StackName, i, opState.OriginalBranch, opState.SyncUpToIndex, branchWtPath);
+                SaveOperationState(ctx.RepoPath, opState.StackName, i, opState.OriginalBranch, opState.SyncUpToIndex, branchWtPath);
                 result.BranchResults.Add(branchResult);
                 result.HasConflict = true;
                 return true;

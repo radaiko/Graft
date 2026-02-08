@@ -93,7 +93,7 @@ public static class CommitRouter
         catch (Exception ex)
         {
             // Recover stash if it wasn't popped successfully
-            var stashRef = await TryRecoverStashAsync(git, originalBranch);
+            var stashRef = await TryRecoverStashAsync(git);
 
             if (stashRef != null)
             {
@@ -150,7 +150,7 @@ public static class CommitRouter
     /// Attempts to find and return the stash ref for the graft-commit-temp stash entry.
     /// Returns null if no matching stash entry was found.
     /// </summary>
-    private static async Task<string?> TryRecoverStashAsync(GitRunner git, string originalBranch)
+    private static async Task<string?> TryRecoverStashAsync(GitRunner git)
     {
         var stashList = await git.RunAsync("stash", "list");
         if (!stashList.Success)

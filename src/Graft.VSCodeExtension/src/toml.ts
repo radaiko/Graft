@@ -1,6 +1,22 @@
 import { parse } from "smol-toml";
 import type { StackDefinition, StackBranch, PullRequestRef, PrState } from "./types.js";
 
+function parsePullRequest(rec: Record<string, unknown>): PullRequestRef | undefined {
+  const prNumber = rec["pr_number"];
+  const prUrl = rec["pr_url"];
+  if (prNumber == null || typeof prUrl !== "string") return undefined;
+
+  const num = Number(prNumber);
+  if (Number.isNaN(num)) return undefined;
+
+  const prStateRaw = rec["pr_state"];
+  let prState: PrState = "open";
+  if (prStateRaw === "merged") prState = "merged";
+  else if (prStateRaw === "closed") prState = "closed";
+
+  return { number: num, url: prUrl, state: prState };
+}
+
 function parseBranches(branchesArr: unknown): StackBranch[] {
   const branches: StackBranch[] = [];
   if (!Array.isArray(branchesArr)) return branches;
@@ -12,29 +28,7 @@ function parseBranches(branchesArr: unknown): StackBranch[] {
     if (typeof branchName !== "string") continue;
 
     const branch: StackBranch = { name: branchName };
-
-    const prNumber = rec["pr_number"];
-    const prUrl = rec["pr_url"];
-    if (
-      prNumber != null &&
-      typeof prUrl === "string"
-    ) {
-      const num = Number(prNumber);
-      if (!Number.isNaN(num)) {
-        const prStateRaw = rec["pr_state"];
-        let prState: PrState = "open";
-        if (prStateRaw === "merged") prState = "merged";
-        else if (prStateRaw === "closed") prState = "closed";
-
-        const pr: PullRequestRef = {
-          number: num,
-          url: prUrl,
-          state: prState,
-        };
-        branch.pr = pr;
-      }
-    }
-
+    branch.pr = parsePullRequest(rec);
     branches.push(branch);
   }
 
