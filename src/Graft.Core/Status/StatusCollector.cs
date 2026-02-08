@@ -13,12 +13,18 @@ public static class StatusCollector
         // Filter to repos whose path still exists
         var existingRepos = cache.Repos.Where(r => Directory.Exists(r.Path)).ToList();
 
-        // Collect status in parallel
-        var tasks = existingRepos.Select(repo =>
-            CollectRepoStatusAsync(repo.Name, repo.Path, detailed: false, ct));
+        // Collect status in parallel with bounded concurrency
+        var bag = new System.Collections.Concurrent.ConcurrentBag<RepoStatus>();
 
-        var results = await Task.WhenAll(tasks);
-        return [.. results];
+        await Parallel.ForEachAsync(existingRepos,
+            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = ct },
+            async (repo, token) =>
+            {
+                var s = await CollectRepoStatusAsync(repo.Name, repo.Path, detailed: false, token);
+                bag.Add(s);
+            });
+
+        return [.. bag.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)];
     }
 
     public static async Task<RepoStatus> CollectOneAsync(string repoPath, CancellationToken ct = default)
@@ -82,8 +88,14 @@ public static class StatusCollector
                 var toplevelResult = await git.RunAsync("rev-parse", "--show-toplevel");
                 var mainPath = toplevelResult.Success ? toplevelResult.Stdout : Path.GetFullPath(repoPath);
 
+                var normalizedMainPath = Path.GetFullPath(mainPath);
+                var pathComparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+                    ? StringComparison.OrdinalIgnoreCase
+                    : StringComparison.Ordinal;
+
                 status.Worktrees = worktrees
-                    .Where(w => !w.IsBare && !string.Equals(w.Path, mainPath, StringComparison.Ordinal))
+                    .Where(w => !w.IsBare && !string.Equals(
+                        Path.GetFullPath(w.Path), normalizedMainPath, pathComparison))
                     .ToList();
             }
             catch
@@ -128,13 +140,14 @@ public static class StatusCollector
                             };
 
                             // Get ahead/behind for each stack branch
-                            foreach (var branch in stack.Branches)
+                            for (int bi = 0; bi < stack.Branches.Count; bi++)
                             {
+                                var branch = stack.Branches[bi];
                                 var branchSummary = new StackBranchSummary { Name = branch.Name };
 
-                                var branchParent = stack.Branches.IndexOf(branch) == 0
+                                var branchParent = bi == 0
                                     ? stack.Trunk
-                                    : stack.Branches[stack.Branches.IndexOf(branch) - 1].Name;
+                                    : stack.Branches[bi - 1].Name;
 
                                 var branchAbResult = await git.RunAsync(
                                     "rev-list", "--left-right", "--count",
@@ -163,6 +176,10 @@ public static class StatusCollector
                     }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

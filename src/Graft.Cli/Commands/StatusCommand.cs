@@ -6,7 +6,11 @@ namespace Graft.Cli.Commands;
 
 public static class StatusCommand
 {
-    public static Command Create()
+    public static Command Create() => BuildCommand("status", hidden: false);
+
+    public static Command CreateAlias() => BuildCommand("st", hidden: true);
+
+    private static Command BuildCommand(string name, bool hidden)
     {
         var nameArg = new Argument<string?>("reponame")
         {
@@ -14,48 +18,8 @@ public static class StatusCommand
             Arity = ArgumentArity.ZeroOrOne,
         };
 
-        var command = new Command("status", "Cross-repo status overview");
-        command.Add(nameArg);
-
-        command.SetAction(async (parseResult, ct) =>
-        {
-            var repoName = parseResult.GetValue(nameArg);
-            await DoStatus(repoName, ct);
-        });
-
-        // Hidden alias: st
-        var alias = new Command("st", "Cross-repo status overview");
-        alias.Hidden = true;
-
-        var aliasNameArg = new Argument<string?>("reponame")
-        {
-            Description = "Repo name for detailed status (omit for overview of all repos)",
-            Arity = ArgumentArity.ZeroOrOne,
-        };
-        alias.Add(aliasNameArg);
-
-        alias.SetAction(async (parseResult, ct) =>
-        {
-            var repoName = parseResult.GetValue(aliasNameArg);
-            await DoStatus(repoName, ct);
-        });
-
-        // Return both as a list trick — caller adds them individually
-        // Actually, we need to return just the main command and have Program.cs add the alias separately.
-        // Follow CdCommand pattern: return main command. We'll add alias registration separately.
-        return command;
-    }
-
-    public static Command CreateAlias()
-    {
-        var nameArg = new Argument<string?>("reponame")
-        {
-            Description = "Repo name for detailed status (omit for overview of all repos)",
-            Arity = ArgumentArity.ZeroOrOne,
-        };
-
-        var command = new Command("st", "Cross-repo status overview");
-        command.Hidden = true;
+        var command = new Command(name, "Cross-repo status overview");
+        command.Hidden = hidden;
         command.Add(nameArg);
 
         command.SetAction(async (parseResult, ct) =>
@@ -82,9 +46,14 @@ public static class StatusCommand
                 await DoOverviewStatus(configDir, ct);
             }
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error: {ex.Message}");
+            Console.Error.WriteLine($"Error: Failed to collect status: {ex.Message}");
+            Console.Error.WriteLine("Ensure your repos are accessible and try again.");
             Environment.ExitCode = 1;
         }
     }
@@ -159,6 +128,7 @@ public static class StatusCommand
         if (!Directory.Exists(repo.Path))
         {
             Console.Error.WriteLine($"Error: Repo path no longer exists: {repo.Path}");
+            Console.Error.WriteLine("Run 'graft scan' to refresh the repo cache.");
             Environment.ExitCode = 1;
             return;
         }
@@ -229,8 +199,27 @@ public static class StatusCommand
     private static string TildePath(string path)
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        if (!string.IsNullOrEmpty(home) && path.StartsWith(home, StringComparison.Ordinal))
-            return "~" + path[home.Length..];
+        if (string.IsNullOrEmpty(home))
+            return path;
+
+        try
+        {
+            var normalizedHome = Path.GetFullPath(home);
+            var normalizedPath = Path.GetFullPath(path);
+            var comparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            if (normalizedPath.StartsWith(normalizedHome, comparison) &&
+                (normalizedPath.Length == normalizedHome.Length ||
+                 normalizedPath[normalizedHome.Length] == Path.DirectorySeparatorChar))
+                return "~" + normalizedPath[normalizedHome.Length..];
+        }
+        catch
+        {
+            // Malformed path — fall through to return original
+        }
+
         return path;
     }
 }
