@@ -103,7 +103,7 @@ public sealed class RepoScannerTests : IDisposable
     }
 
     [Fact]
-    public async Task ScanAndUpdateCache_PrunesStaleEntries()
+    public void ScanAndUpdateCache_PrunesStaleEntries()
     {
         // Add a repo that doesn't exist to the cache
         var cache = new RepoCache();
@@ -114,7 +114,7 @@ public sealed class RepoScannerTests : IDisposable
         CreateFakeGitRepo("real-repo");
         ConfigLoader.SaveScanPaths([new ScanPath { Path = _scanDir }], _configDir);
 
-        await RepoScanner.ScanAndUpdateCacheAsync(_configDir);
+        RepoScanner.ScanAndUpdateCache(_configDir);
 
         var updated = ConfigLoader.LoadRepoCache(_configDir);
         Assert.DoesNotContain(updated.Repos, r => r.Name == "gone-repo");
@@ -122,7 +122,7 @@ public sealed class RepoScannerTests : IDisposable
     }
 
     [Fact]
-    public async Task ScanAndUpdateCache_MergesWithoutDuplicates()
+    public void ScanAndUpdateCache_MergesWithoutDuplicates()
     {
         CreateFakeGitRepo("existing-repo");
         var repoPath = Path.Combine(_scanDir, "existing-repo");
@@ -133,17 +133,17 @@ public sealed class RepoScannerTests : IDisposable
         ConfigLoader.SaveRepoCache(cache, _configDir);
         ConfigLoader.SaveScanPaths([new ScanPath { Path = _scanDir }], _configDir);
 
-        await RepoScanner.ScanAndUpdateCacheAsync(_configDir);
+        RepoScanner.ScanAndUpdateCache(_configDir);
 
         var updated = ConfigLoader.LoadRepoCache(_configDir);
         Assert.Single(updated.Repos);
     }
 
     [Fact]
-    public async Task ScanAndUpdateCache_NoScanPaths_DoesNothing()
+    public void ScanAndUpdateCache_NoScanPaths_DoesNothing()
     {
         // No scan paths registered — should not error
-        await RepoScanner.ScanAndUpdateCacheAsync(_configDir);
+        RepoScanner.ScanAndUpdateCache(_configDir);
 
         var cache = ConfigLoader.LoadRepoCache(_configDir);
         Assert.Empty(cache.Repos);

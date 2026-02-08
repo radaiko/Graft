@@ -63,11 +63,11 @@ if (args.Length == 0 || !string.Equals(args[0], "update", StringComparison.Ordin
 }
 
 // 3. Spawn background repo scan (fire-and-forget)
-_ = Task.Run(async () =>
+_ = Task.Run(() =>
 {
     try
     {
-        await RepoScanner.ScanAndUpdateCacheAsync(stateDir);
+        RepoScanner.ScanAndUpdateCache(stateDir);
     }
     catch
     {

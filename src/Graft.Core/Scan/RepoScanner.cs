@@ -1,9 +1,15 @@
+using System.Runtime.InteropServices;
 using Graft.Core.Config;
 
 namespace Graft.Core.Scan;
 
 public static class RepoScanner
 {
+    private static readonly StringComparer PathComparer =
+        RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+            ? StringComparer.Ordinal
+            : StringComparer.OrdinalIgnoreCase;
+
     private static readonly HashSet<string> SkipDirs = new(StringComparer.OrdinalIgnoreCase)
     {
         "node_modules", "vendor", ".cache", "bin", "obj",
@@ -108,7 +114,7 @@ public static class RepoScanner
     /// Scans all registered directories and updates the repo cache.
     /// Prunes stale entries (paths that no longer exist) and merges new discoveries.
     /// </summary>
-    public static async Task ScanAndUpdateCacheAsync(string configDir)
+    public static void ScanAndUpdateCache(string configDir)
     {
         var scanPaths = ConfigLoader.LoadScanPaths(configDir);
         if (scanPaths.Count == 0)
@@ -127,7 +133,8 @@ public static class RepoScanner
         cache.Repos.RemoveAll(r => !Directory.Exists(r.Path));
 
         // Merge new discoveries (avoid duplicates by path)
-        var existingPaths = new HashSet<string>(cache.Repos.Select(r => r.Path), StringComparer.Ordinal);
+        var existingByPath = cache.Repos.ToDictionary(r => r.Path, PathComparer);
+        var existingPaths = new HashSet<string>(existingByPath.Keys, PathComparer);
         foreach (var repo in discovered)
         {
             if (!existingPaths.Contains(repo.Path))
@@ -135,10 +142,12 @@ public static class RepoScanner
                 cache.Repos.Add(repo);
                 existingPaths.Add(repo.Path);
             }
+            else if (repo.Branch != null && existingByPath.TryGetValue(repo.Path, out var existing) && existing.Branch != repo.Branch)
+            {
+                existing.Branch = repo.Branch;
+            }
         }
 
         ConfigLoader.SaveRepoCache(cache, configDir);
-
-        await Task.CompletedTask;
     }
 }

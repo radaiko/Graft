@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using Tomlyn;
 using Tomlyn.Model;
@@ -377,11 +378,16 @@ public static class ConfigLoader
         File.Move(tempPath, cachePath, overwrite: true);
     }
 
+    private static readonly StringComparison PathComparison =
+        RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+            ? StringComparison.Ordinal
+            : StringComparison.OrdinalIgnoreCase;
+
     public static void AddRepoToCache(CachedRepo repo, string configDir)
     {
         var cache = LoadRepoCache(configDir);
-        // Avoid duplicates by path
-        if (cache.Repos.Any(r => string.Equals(r.Path, repo.Path, StringComparison.Ordinal)))
+        // Avoid duplicates by path (case-insensitive on macOS/Windows)
+        if (cache.Repos.Any(r => string.Equals(r.Path, repo.Path, PathComparison)))
             return;
         cache.Repos.Add(repo);
         SaveRepoCache(cache, configDir);
@@ -390,7 +396,7 @@ public static class ConfigLoader
     public static void RemoveRepoFromCache(string repoPath, string configDir)
     {
         var cache = LoadRepoCache(configDir);
-        var removed = cache.Repos.RemoveAll(r => string.Equals(r.Path, repoPath, StringComparison.Ordinal));
+        var removed = cache.Repos.RemoveAll(r => string.Equals(r.Path, repoPath, PathComparison));
         if (removed > 0)
             SaveRepoCache(cache, configDir);
     }

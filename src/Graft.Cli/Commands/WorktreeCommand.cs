@@ -44,7 +44,7 @@ public static class WorktreeCommand
                         var wtPath = WorktreeManager.GetWorktreePath(branch, repoPath);
                         var repoName = Path.GetFileName(Path.GetFullPath(repoPath));
                         var safeBranch = branch.Replace('/', '-');
-                        var configDir = GetConfigDir();
+                        var configDir = CliPaths.GetConfigDir();
                         ConfigLoader.AddRepoToCache(new CachedRepo
                         {
                             Name = $"{repoName}.wt.{safeBranch}",
@@ -111,7 +111,7 @@ public static class WorktreeCommand
                 // Best-effort: remove worktree from repo cache
                 try
                 {
-                    ConfigLoader.RemoveRepoFromCache(wtPath, GetConfigDir());
+                    ConfigLoader.RemoveRepoFromCache(wtPath, CliPaths.GetConfigDir());
                 }
                 catch { }
             }
@@ -182,10 +182,4 @@ public static class WorktreeCommand
         return command;
     }
 
-    private static string GetConfigDir()
-    {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".config", "graft");
-    }
 }

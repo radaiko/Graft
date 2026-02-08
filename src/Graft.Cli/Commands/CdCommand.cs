@@ -20,7 +20,7 @@ public static class CdCommand
         command.SetAction((parseResult) =>
         {
             var name = parseResult.GetValue(nameArg);
-            var configDir = GetConfigDir();
+            var configDir = CliPaths.GetConfigDir();
 
             if (name != null)
             {
@@ -98,10 +98,4 @@ public static class CdCommand
         return command;
     }
 
-    private static string GetConfigDir()
-    {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".config", "graft");
-    }
 }

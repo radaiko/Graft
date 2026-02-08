@@ -36,7 +36,7 @@ public static class ScanCommand
 
     private static void DoAdd(string directory)
     {
-        var configDir = GetConfigDir();
+        var configDir = CliPaths.GetConfigDir();
 
         try
         {
@@ -85,7 +85,7 @@ public static class ScanCommand
 
     private static void DoRemove(string directory)
     {
-        var configDir = GetConfigDir();
+        var configDir = CliPaths.GetConfigDir();
 
         try
         {
@@ -126,7 +126,7 @@ public static class ScanCommand
 
     private static void DoList()
     {
-        var configDir = GetConfigDir();
+        var configDir = CliPaths.GetConfigDir();
         var paths = ScanPathManager.List(configDir);
 
         if (paths.Count == 0)
@@ -139,10 +139,4 @@ public static class ScanCommand
             Console.WriteLine(p.Path);
     }
 
-    private static string GetConfigDir()
-    {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".config", "graft");
-    }
 }

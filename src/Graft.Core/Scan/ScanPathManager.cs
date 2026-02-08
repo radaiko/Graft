@@ -1,9 +1,15 @@
+using System.Runtime.InteropServices;
 using Graft.Core.Config;
 
 namespace Graft.Core.Scan;
 
 public static class ScanPathManager
 {
+    private static readonly StringComparison PathComparison =
+        RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+            ? StringComparison.Ordinal
+            : StringComparison.OrdinalIgnoreCase;
+
     public static void Add(string directory, string configDir)
     {
         var resolved = Path.GetFullPath(directory);
@@ -13,7 +19,7 @@ public static class ScanPathManager
 
         var paths = ConfigLoader.LoadScanPaths(configDir);
 
-        if (paths.Any(p => string.Equals(p.Path, resolved, StringComparison.Ordinal)))
+        if (paths.Any(p => string.Equals(p.Path, resolved, PathComparison)))
             throw new InvalidOperationException($"Scan path '{resolved}' is already registered.");
 
         paths.Add(new ScanPath { Path = resolved });
@@ -25,7 +31,7 @@ public static class ScanPathManager
         var resolved = Path.GetFullPath(directory);
 
         var paths = ConfigLoader.LoadScanPaths(configDir);
-        var removed = paths.RemoveAll(p => string.Equals(p.Path, resolved, StringComparison.Ordinal));
+        var removed = paths.RemoveAll(p => string.Equals(p.Path, resolved, PathComparison));
 
         if (removed == 0)
             throw new InvalidOperationException($"Scan path '{resolved}' is not registered.");

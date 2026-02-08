@@ -89,6 +89,8 @@ public sealed class ScanPathManagerTests : IDisposable
 
             var paths = ScanPathManager.List(_configDir);
             Assert.Equal(2, paths.Count);
+            Assert.Contains(paths, p => p.Path == Path.GetFullPath(_testDir));
+            Assert.Contains(paths, p => p.Path == Path.GetFullPath(dir2));
         }
         finally
         {
