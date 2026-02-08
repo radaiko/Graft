@@ -75,6 +75,19 @@ _ = Task.Run(() =>
     }
 });
 
+// 4. Spawn background auto-fetch (fire-and-forget)
+_ = Task.Run(async () =>
+{
+    try
+    {
+        await AutoFetcher.FetchDueReposAsync(stateDir);
+    }
+    catch
+    {
+        // Silently swallow — background fetch must never crash the CLI
+    }
+});
+
 var root = new RootCommand("Graft — stacked branches and worktree management");
 
 // Stack commands (grouped)

@@ -11,6 +11,14 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Core:** Auto-fetch — background `git fetch --all` for repos with auto-fetch enabled, rate-limited to 15-minute intervals per repo (#19)
+- **CLI:** `graft scan auto-fetch enable [<name>]` — enable auto-fetch for a repo (by name or current directory)
+- **CLI:** `graft scan auto-fetch disable [<name>]` — disable auto-fetch for a repo
+- **CLI:** `graft scan auto-fetch list` — list all repos with their auto-fetch status and last fetch time
+
 ## [0.3.0]
 
 ### Added

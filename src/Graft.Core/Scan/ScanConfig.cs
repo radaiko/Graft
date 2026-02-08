@@ -15,6 +15,11 @@ public sealed class CachedRepo
     /// </summary>
     public string? Branch { get; set; }
     public bool AutoFetch { get; set; }
+    /// <summary>
+    /// UTC timestamp of the last successful background fetch.
+    /// Used for rate-limiting auto-fetch to avoid redundant network calls.
+    /// </summary>
+    public DateTime? LastFetched { get; set; }
 }
 
 public sealed class RepoCache

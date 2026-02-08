@@ -34,7 +34,7 @@ Releases are published to this repo's [GitHub Releases](https://github.com/radai
 - **Sync merges + pushes**: `sync` merges each branch's parent into it (bottom-to-top), then pushes each updated branch (regular push, no force).
 - **Repo scanner**: Background thread scans registered directories for git repos on every invocation (non-blocking). Results cached in `~/.config/graft/repo-cache.toml`. Worktrees auto-added/removed from cache. Stale entries pruned automatically.
 - **Unified navigation**: `graft cd` is the single navigation command — matches repo names first, then branch names for worktrees. Replaces `graft wt goto`.
-- **Auto-fetch** (planned): Opt-in `git fetch --all` for tracked repos, rate-limited, runs in background thread.
+- **Auto-fetch**: Opt-in `git fetch --all` for tracked repos. Rate-limited to 15-minute intervals per repo via `last_fetched` timestamp. Runs in fire-and-forget background thread on every invocation. Enable/disable via `graft scan auto-fetch enable/disable`.
 
 ## Tech Stack
 
@@ -116,6 +116,9 @@ graft wt list (ls)                                     # List worktrees
 graft scan add <directory>                             # Register directory for repo scanning
 graft scan remove (rm) <directory>                     # Unregister directory
 graft scan list (ls)                                   # List registered scan paths
+graft scan auto-fetch enable [<name>]                  # Enable auto-fetch for a repo
+graft scan auto-fetch disable [<name>]                 # Disable auto-fetch for a repo
+graft scan auto-fetch list                             # List repos with auto-fetch status
 
 graft cd <name>                                        # Navigate to repo or worktree
 graft status (st)                                      # Cross-repo status overview
@@ -143,7 +146,7 @@ graft ui                                               # Start web UI
 - `AutoUpdate/` — Update checking and binary replacement
 - `Install/` — Alias installer (`gt` symlink, `git gt` alias)
 - `Config/` — Configuration types, loading, and active stack persistence
-- `Scan/` — Repo scanner (background directory scanning, repo cache, scan path management, navigation)
+- `Scan/` — Repo scanner (background directory scanning, repo cache, scan path management, navigation, auto-fetch)
 - `Tui/` — Terminal UI components (fuzzy matcher, interactive picker)
 - `Status/` — Cross-repo status aggregation (branch, ahead/behind, changed files, stacks, worktrees)
 
@@ -200,7 +203,8 @@ path = "/Users/dev/work"
 [[repos]]
 name = "Graft"
 path = "/Users/dev/projects/Graft"
-auto_fetch = false
+auto_fetch = true
+last_fetched = "2026-02-08T10:15:00Z"
 
 [[repos]]
 name = "Graft.wt.feature-api"
