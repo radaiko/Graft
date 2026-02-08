@@ -9,6 +9,9 @@ namespace Graft.Cli.Server;
 
 public sealed class ApiServer : IDisposable
 {
+    private const string StacksRoute = "stacks";
+    private const string WorktreesRoute = "worktrees";
+
     private static readonly Assembly _assembly = typeof(ApiServer).Assembly;
     private static readonly string _resourcePrefix = FindResourcePrefix();
 
@@ -98,7 +101,7 @@ public sealed class ApiServer : IDisposable
             }
             catch (Exception writeEx)
             {
-                Console.Error.WriteLine($"Failed to write error response: {writeEx}");
+                await Console.Error.WriteLineAsync($"Failed to write error response: {writeEx}");
             }
         }
         finally
@@ -106,7 +109,7 @@ public sealed class ApiServer : IDisposable
             try { ctx.Response.Close(); }
             catch (Exception closeEx)
             {
-                Console.Error.WriteLine($"Failed to close HTTP response: {closeEx}");
+                await Console.Error.WriteLineAsync($"Failed to close HTTP response: {closeEx}");
             }
         }
     }
@@ -125,44 +128,44 @@ public sealed class ApiServer : IDisposable
             switch (segments)
             {
                 // Stack endpoints
-                case ["api", "stacks"] when method == "GET":
+                case ["api", StacksRoute] when method == "GET":
                     await StackHandler.ListStacks(ctx, _repoPath);
                     break;
-                case ["api", "stacks"] when method == "POST":
+                case ["api", StacksRoute] when method == "POST":
                     await StackHandler.InitStack(ctx, _repoPath, ct);
                     break;
-                case ["api", "stacks", "active"] when method == "GET":
+                case ["api", StacksRoute, "active"] when method == "GET":
                     await StackHandler.GetActiveStack(ctx, _repoPath);
                     break;
-                case ["api", "stacks", "active"] when method == "PUT":
+                case ["api", StacksRoute, "active"] when method == "PUT":
                     await StackHandler.SetActiveStack(ctx, _repoPath);
                     break;
-                case ["api", "stacks", var name] when method == "GET":
+                case ["api", StacksRoute, var name] when method == "GET":
                     name = Uri.UnescapeDataString(name);
                     Validation.ValidateStackName(name);
                     await StackHandler.GetStack(ctx, name, _repoPath, ct);
                     break;
-                case ["api", "stacks", var name] when method == "DELETE":
+                case ["api", StacksRoute, var name] when method == "DELETE":
                     name = Uri.UnescapeDataString(name);
                     Validation.ValidateStackName(name);
                     await StackHandler.DeleteStack(ctx, name, _repoPath);
                     break;
-                case ["api", "stacks", "push"] when method == "POST":
+                case ["api", StacksRoute, "push"] when method == "POST":
                     await StackHandler.PushBranch(ctx, _repoPath, ct);
                     break;
-                case ["api", "stacks", "sync"] when method == "POST":
+                case ["api", StacksRoute, "sync"] when method == "POST":
                     await StackHandler.SyncStack(ctx, _repoPath, ct);
                     break;
-                case ["api", "stacks", "commit"] when method == "POST":
+                case ["api", StacksRoute, "commit"] when method == "POST":
                     await StackHandler.CommitToStack(ctx, _repoPath, ct);
                     break;
-                case ["api", "stacks", "pop"] when method == "POST":
+                case ["api", StacksRoute, "pop"] when method == "POST":
                     await StackHandler.PopBranch(ctx, _repoPath, ct);
                     break;
-                case ["api", "stacks", "drop"] when method == "POST":
+                case ["api", StacksRoute, "drop"] when method == "POST":
                     await StackHandler.DropBranch(ctx, _repoPath, ct);
                     break;
-                case ["api", "stacks", "shift"] when method == "POST":
+                case ["api", StacksRoute, "shift"] when method == "POST":
                     await StackHandler.ShiftBranch(ctx, _repoPath, ct);
                     break;
 
@@ -178,10 +181,10 @@ public sealed class ApiServer : IDisposable
                 case ["api", "nuke"] when method == "POST":
                     await NukeHandler.NukeAll(ctx, _repoPath, ct);
                     break;
-                case ["api", "nuke", "worktrees"] when method == "POST":
+                case ["api", "nuke", WorktreesRoute] when method == "POST":
                     await NukeHandler.NukeWorktrees(ctx, _repoPath, ct);
                     break;
-                case ["api", "nuke", "stacks"] when method == "POST":
+                case ["api", "nuke", StacksRoute] when method == "POST":
                     await NukeHandler.NukeStacks(ctx, _repoPath, ct);
                     break;
                 case ["api", "nuke", "branches"] when method == "POST":
@@ -189,14 +192,14 @@ public sealed class ApiServer : IDisposable
                     break;
 
                 // Worktree endpoints
-                case ["api", "worktrees"] when method == "GET":
+                case ["api", WorktreesRoute] when method == "GET":
                     await WorktreeHandler.ListWorktrees(ctx, _repoPath, ct);
                     break;
-                case ["api", "worktrees"] when method == "POST":
+                case ["api", WorktreesRoute] when method == "POST":
                     await WorktreeHandler.AddWorktree(ctx, _repoPath, ct);
                     break;
                 // DELETE /api/worktrees/{branch...} — branch may contain slashes
-                case ["api", "worktrees", .. var rest] when method == "DELETE" && rest.Length > 0:
+                case ["api", WorktreesRoute, .. var rest] when method == "DELETE" && rest.Length > 0:
                 {
                     var branch = Uri.UnescapeDataString(string.Join("/", rest));
                     Validation.ValidateName(branch, "Branch name");

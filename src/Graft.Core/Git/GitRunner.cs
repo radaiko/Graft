@@ -10,6 +10,7 @@ public sealed class GitRunner
     private readonly string _workingDirectory;
     private readonly CancellationToken _ct;
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
+    private const string GitdirPrefix = "gitdir: ";
 
     public GitRunner(string workingDirectory, CancellationToken ct = default)
     {
@@ -87,9 +88,9 @@ public sealed class GitRunner
         if (File.Exists(dotGit))
         {
             var content = File.ReadAllText(dotGit).Trim();
-            if (content.StartsWith("gitdir: ", StringComparison.Ordinal))
+            if (content.StartsWith(GitdirPrefix, StringComparison.Ordinal))
             {
-                var gitDir = content["gitdir: ".Length..];
+                var gitDir = content[GitdirPrefix.Length..];
                 if (!Path.IsPathRooted(gitDir))
                     gitDir = Path.GetFullPath(Path.Combine(workingDir, gitDir));
 
@@ -123,9 +124,9 @@ public sealed class GitRunner
         if (File.Exists(dotGit))
         {
             var content = File.ReadAllText(dotGit).Trim();
-            if (content.StartsWith("gitdir: ", StringComparison.Ordinal))
+            if (content.StartsWith(GitdirPrefix, StringComparison.Ordinal))
             {
-                var gitDir = content["gitdir: ".Length..];
+                var gitDir = content[GitdirPrefix.Length..];
                 if (!Path.IsPathRooted(gitDir))
                     gitDir = Path.GetFullPath(Path.Combine(workingDir, gitDir));
                 return gitDir;

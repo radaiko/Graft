@@ -56,7 +56,7 @@ export class BranchItem extends vscode.TreeItem {
     const parts: string[] = [];
     if (branch.commitCount > 0) {
       parts.push(
-        `${branch.commitCount} commit${branch.commitCount !== 1 ? "s" : ""}`
+        `${branch.commitCount} commit${branch.commitCount === 1 ? "" : "s"}`
       );
     }
     if (branch.needsMerge) {

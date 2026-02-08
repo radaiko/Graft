@@ -52,8 +52,8 @@ public static class StatusCommand
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error: Failed to collect status: {ex.Message}");
-            Console.Error.WriteLine("Ensure your repos are accessible and try again.");
+            await Console.Error.WriteLineAsync($"Error: Failed to collect status: {ex.Message}");
+            await Console.Error.WriteLineAsync("Ensure your repos are accessible and try again.");
             Environment.ExitCode = 1;
         }
     }
@@ -74,40 +74,45 @@ public static class StatusCommand
             if (!first) Console.WriteLine();
             first = false;
 
-            var tilded = TildePath(status.Path);
-            Console.WriteLine($"{status.Name}  {tilded}");
-
-            if (!status.IsAccessible)
-            {
-                Console.WriteLine($"  status   inaccessible: {status.Error}");
-                continue;
-            }
-
-            // Branch
-            Console.WriteLine($"  branch   {status.Branch ?? "(detached)"}");
-
-            // Status line: ahead/behind + changed
-            var parts = new List<string>();
-            if (status.Ahead > 0) parts.Add($"↑{status.Ahead}");
-            if (status.Behind > 0) parts.Add($"↓{status.Behind}");
-            if (status.ChangedFiles > 0) parts.Add($"{status.ChangedFiles} changed");
-            if (status.UntrackedFiles > 0) parts.Add($"{status.UntrackedFiles} untracked");
-
-            var statusText = parts.Count > 0 ? string.Join("  ", parts) : "clean";
-            Console.WriteLine($"  status   {statusText}");
-
-            // Stack
-            if (status.ActiveStackName != null)
-                Console.WriteLine($"  stack    {status.ActiveStackName} ({status.ActiveStackBranchCount} branches)");
-            else
-                Console.WriteLine("  stack    —");
-
-            // Worktrees
-            if (status.Worktrees.Count > 0)
-                Console.WriteLine($"  worktrees  {status.Worktrees.Count} active");
-            else
-                Console.WriteLine("  worktrees  —");
+            PrintRepoOverview(status);
         }
+    }
+
+    private static void PrintRepoOverview(RepoStatus status)
+    {
+        var tilded = TildePath(status.Path);
+        Console.WriteLine($"{status.Name}  {tilded}");
+
+        if (!status.IsAccessible)
+        {
+            Console.WriteLine($"  status   inaccessible: {status.Error}");
+            return;
+        }
+
+        // Branch
+        Console.WriteLine($"  branch   {status.Branch ?? "(detached)"}");
+
+        // Status line: ahead/behind + changed
+        var parts = new List<string>();
+        if (status.Ahead > 0) parts.Add($"\u2191{status.Ahead}");
+        if (status.Behind > 0) parts.Add($"\u2193{status.Behind}");
+        if (status.ChangedFiles > 0) parts.Add($"{status.ChangedFiles} changed");
+        if (status.UntrackedFiles > 0) parts.Add($"{status.UntrackedFiles} untracked");
+
+        var statusText = parts.Count > 0 ? string.Join("  ", parts) : "clean";
+        Console.WriteLine($"  status   {statusText}");
+
+        // Stack
+        if (status.ActiveStackName != null)
+            Console.WriteLine($"  stack    {status.ActiveStackName} ({status.ActiveStackBranchCount} branches)");
+        else
+            Console.WriteLine("  stack    \u2014");
+
+        // Worktrees
+        if (status.Worktrees.Count > 0)
+            Console.WriteLine($"  worktrees  {status.Worktrees.Count} active");
+        else
+            Console.WriteLine("  worktrees  \u2014");
     }
 
     private static async Task DoDetailedStatus(string repoName, string configDir, CancellationToken ct)
@@ -119,16 +124,16 @@ public static class StatusCommand
 
         if (repo == null)
         {
-            Console.Error.WriteLine($"Error: No repo found matching '{repoName}'.");
-            Console.Error.WriteLine("Run 'graft scan add <directory>' to register scan paths, then try again.");
+            await Console.Error.WriteLineAsync($"Error: No repo found matching '{repoName}'.");
+            await Console.Error.WriteLineAsync("Run 'graft scan add <directory>' to register scan paths, then try again.");
             Environment.ExitCode = 1;
             return;
         }
 
         if (!Directory.Exists(repo.Path))
         {
-            Console.Error.WriteLine($"Error: Repo path no longer exists: {repo.Path}");
-            Console.Error.WriteLine("Run 'graft scan' to refresh the repo cache.");
+            await Console.Error.WriteLineAsync($"Error: Repo path no longer exists: {repo.Path}");
+            await Console.Error.WriteLineAsync("Run 'graft scan' to refresh the repo cache.");
             Environment.ExitCode = 1;
             return;
         }
@@ -150,38 +155,20 @@ public static class StatusCommand
         {
             var upstreamDetail = (status.Ahead == 0 && status.Behind == 0)
                 ? "up to date"
-                : $"↑{status.Ahead} ↓{status.Behind}";
+                : $"\u2191{status.Ahead} \u2193{status.Behind}";
             Console.WriteLine($"  upstream  {status.Upstream} ({upstreamDetail})");
         }
         else
         {
-            Console.WriteLine("  upstream  —");
+            Console.WriteLine("  upstream  \u2014");
         }
 
         // Changed/untracked
-        Console.WriteLine($"  changed   {(status.ChangedFiles > 0 ? status.ChangedFiles.ToString() : "—")}");
-        Console.WriteLine($"  untracked {(status.UntrackedFiles > 0 ? status.UntrackedFiles.ToString() : "—")}");
+        Console.WriteLine($"  changed   {(status.ChangedFiles > 0 ? status.ChangedFiles.ToString() : "\u2014")}");
+        Console.WriteLine($"  untracked {(status.UntrackedFiles > 0 ? status.UntrackedFiles.ToString() : "\u2014")}");
 
         // Stacks
-        if (status.Stacks.Count > 0)
-        {
-            foreach (var stack in status.Stacks)
-            {
-                var active = stack.IsActive ? " (active)" : "";
-                Console.WriteLine();
-                Console.WriteLine($"  stack: {stack.Name}{active}");
-                Console.WriteLine($"    {stack.Trunk}");
-
-                for (int i = 0; i < stack.Branches.Count; i++)
-                {
-                    var branch = stack.Branches[i];
-                    var indent = new string(' ', 4 + (i * 5));
-                    var connector = "└── ";
-                    var abInfo = $"(↑{branch.Ahead} ↓{branch.Behind})";
-                    Console.WriteLine($"{indent}{connector}{branch.Name}  {abInfo}");
-                }
-            }
-        }
+        PrintDetailedStacks(status);
 
         // Worktrees
         if (status.Worktrees.Count > 0)
@@ -191,7 +178,30 @@ public static class StatusCommand
             foreach (var wt in status.Worktrees)
             {
                 var branchLabel = wt.Branch ?? "(detached)";
-                Console.WriteLine($"    {branchLabel}  → {wt.Path}");
+                Console.WriteLine($"    {branchLabel}  \u2192 {wt.Path}");
+            }
+        }
+    }
+
+    private static void PrintDetailedStacks(RepoStatus status)
+    {
+        if (status.Stacks.Count == 0)
+            return;
+
+        foreach (var stack in status.Stacks)
+        {
+            var active = stack.IsActive ? " (active)" : "";
+            Console.WriteLine();
+            Console.WriteLine($"  stack: {stack.Name}{active}");
+            Console.WriteLine($"    {stack.Trunk}");
+
+            for (int i = 0; i < stack.Branches.Count; i++)
+            {
+                var branch = stack.Branches[i];
+                var indent = new string(' ', 4 + (i * 5));
+                var connector = "\u2514\u2500\u2500 ";
+                var abInfo = $"(\u2191{branch.Ahead} \u2193{branch.Behind})";
+                Console.WriteLine($"{indent}{connector}{branch.Name}  {abInfo}");
             }
         }
     }

@@ -18,39 +18,21 @@ public static class RepoNavigator
     public static List<NavigationResult> FindByName(string name, string configDir)
     {
         var cache = ConfigLoader.LoadRepoCache(configDir);
-        var results = new List<NavigationResult>();
 
         // Exact match on repo name
-        foreach (var repo in cache.Repos)
-        {
-            if (string.Equals(repo.Name, name, StringComparison.OrdinalIgnoreCase))
-            {
-                results.Add(new NavigationResult
-                {
-                    Name = repo.Name,
-                    Path = repo.Path,
-                    Branch = repo.Branch,
-                });
-            }
-        }
+        var results = cache.Repos
+            .Where(repo => string.Equals(repo.Name, name, StringComparison.OrdinalIgnoreCase))
+            .Select(repo => new NavigationResult { Name = repo.Name, Path = repo.Path, Branch = repo.Branch })
+            .ToList();
 
         if (results.Count > 0)
             return results;
 
         // Match on branch field (for worktree entries)
-        foreach (var repo in cache.Repos)
-        {
-            if (repo.Branch != null &&
-                string.Equals(repo.Branch, name, StringComparison.OrdinalIgnoreCase))
-            {
-                results.Add(new NavigationResult
-                {
-                    Name = repo.Name,
-                    Path = repo.Path,
-                    Branch = repo.Branch,
-                });
-            }
-        }
+        results = cache.Repos
+            .Where(repo => repo.Branch != null && string.Equals(repo.Branch, name, StringComparison.OrdinalIgnoreCase))
+            .Select(repo => new NavigationResult { Name = repo.Name, Path = repo.Path, Branch = repo.Branch })
+            .ToList();
 
         return results;
     }

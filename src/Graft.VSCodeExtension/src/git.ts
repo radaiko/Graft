@@ -127,8 +127,8 @@ export async function getCommitCount(
 ): Promise<number> {
   const result = await runGit(["rev-list", "--count", `${from}..${to}`], cwd);
   if (result.exitCode !== 0) return 0;
-  const n = parseInt(result.stdout.trim(), 10);
-  return isNaN(n) ? 0 : n;
+  const n = Number.parseInt(result.stdout.trim(), 10);
+  return Number.isNaN(n) ? 0 : n;
 }
 
 export async function getMergeBase(

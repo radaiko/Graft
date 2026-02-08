@@ -5,6 +5,8 @@ namespace Graft.Cli.Commands;
 
 public static class NukeCommand
 {
+    private const string AbortedMessage = "Aborted.";
+
     public static Command Create()
     {
         var forceOption = CreateForceOption("Override dirty checks");
@@ -25,7 +27,7 @@ public static class NukeCommand
             var response = Console.ReadLine();
             if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("Aborted.");
+                Console.WriteLine(AbortedMessage);
                 return;
             }
 
@@ -51,7 +53,7 @@ public static class NukeCommand
             var response = Console.ReadLine();
             if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("Aborted.");
+                Console.WriteLine(AbortedMessage);
                 return;
             }
 
@@ -74,7 +76,7 @@ public static class NukeCommand
             var response = Console.ReadLine();
             if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("Aborted.");
+                Console.WriteLine(AbortedMessage);
                 return;
             }
 
@@ -97,7 +99,7 @@ public static class NukeCommand
             var response = Console.ReadLine();
             if (!string.Equals(response, "y", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("Aborted.");
+                Console.WriteLine(AbortedMessage);
                 return;
             }
 

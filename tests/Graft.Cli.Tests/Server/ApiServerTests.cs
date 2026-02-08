@@ -10,5 +10,6 @@ public sealed class ApiServerTests
         // Exercises Dispose() path including the try/catch blocks for listener cleanup.
         using var server = new ApiServer(Path.GetTempPath());
         server.Start();
+        Assert.True(server.Port > 0);
     }
 }

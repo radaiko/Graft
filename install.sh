@@ -23,7 +23,7 @@ RID="${os}-${arch}"
 LATEST=$(curl -fsSL "https://api.github.com/repos/radaiko/Graft/releases" \
   | grep -o '"tag_name": "cli/v[^"]*"' | head -1 | sed 's/.*cli\/v//;s/"//')
 
-if [ -z "$LATEST" ]; then
+if [[ -z "$LATEST" ]]; then
   echo "Failed to determine latest version" >&2
   exit 1
 fi

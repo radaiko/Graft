@@ -5,6 +5,10 @@ namespace Graft.Core.Worktree;
 
 public static class WorktreeManager
 {
+    private const string Worktree = "worktree";
+    private const string Porcelain = "--porcelain";
+    private const string WorktreePrefix = "worktree ";
+
     public static async Task AddAsync(string branch, string repoPath, bool createBranch = false, CancellationToken ct = default)
     {
         Validation.ValidateName(branch, "Branch name");
@@ -30,7 +34,7 @@ public static class WorktreeManager
         }
 
         // Check if worktree already exists for this branch
-        var wtList = await git.RunAsync("worktree", "list", "--porcelain");
+        var wtList = await git.RunAsync(Worktree, "list", Porcelain);
         if (wtList.Success && wtList.Stdout.Split('\n').Any(line => line.Trim() == $"branch refs/heads/{branch}"))
             throw new InvalidOperationException($"Worktree already exists for branch '{branch}'");
 
@@ -46,7 +50,7 @@ public static class WorktreeManager
             && !resolvedWtPath.Equals(repoParent, pathComparison))
             throw new InvalidOperationException($"Worktree path '{resolvedWtPath}' would be outside the repository parent directory");
 
-        var result = await git.RunAsync("worktree", "add", wtPath, branch);
+        var result = await git.RunAsync(Worktree, "add", wtPath, branch);
         result.ThrowOnFailure();
     }
 
@@ -55,7 +59,7 @@ public static class WorktreeManager
         var git = new GitRunner(repoPath, ct);
 
         // Find the worktree path for this branch
-        var wtList = await git.RunAsync("worktree", "list", "--porcelain");
+        var wtList = await git.RunAsync(Worktree, "list", Porcelain);
         if (!wtList.Success)
             throw new InvalidOperationException("Failed to list worktrees");
 
@@ -73,8 +77,8 @@ public static class WorktreeManager
         }
 
         var args = force
-            ? new[] { "worktree", "remove", "--force", wtPath }
-            : new[] { "worktree", "remove", wtPath };
+            ? new[] { Worktree, "remove", "--force", wtPath }
+            : new[] { Worktree, "remove", wtPath };
         var result = await git.RunAsync(args);
         result.ThrowOnFailure();
     }
@@ -82,7 +86,7 @@ public static class WorktreeManager
     public static async Task<List<WorktreeInfo>> ListAsync(string repoPath, CancellationToken ct = default)
     {
         var git = new GitRunner(repoPath, ct);
-        var result = await git.RunAsync("worktree", "list", "--porcelain");
+        var result = await git.RunAsync(Worktree, "list", Porcelain);
         result.ThrowOnFailure();
 
         return ParseWorktreeList(result.Stdout);
@@ -106,8 +110,8 @@ public static class WorktreeManager
         foreach (var line in porcelainOutput.Split('\n'))
         {
             var trimmed = line.Trim();
-            if (trimmed.StartsWith("worktree "))
-                currentPath = trimmed["worktree ".Length..];
+            if (trimmed.StartsWith(WorktreePrefix))
+                currentPath = trimmed[WorktreePrefix.Length..];
             else if (trimmed == $"branch refs/heads/{branch}")
                 return currentPath;
         }
@@ -122,9 +126,9 @@ public static class WorktreeManager
         foreach (var line in porcelainOutput.Split('\n'))
         {
             var trimmed = line.Trim();
-            if (trimmed.StartsWith("worktree "))
+            if (trimmed.StartsWith(WorktreePrefix))
             {
-                current = new WorktreeInfo { Path = trimmed["worktree ".Length..] };
+                current = new WorktreeInfo { Path = trimmed[WorktreePrefix.Length..] };
                 worktrees.Add(current);
             }
             else if (current != null && trimmed.StartsWith("branch refs/heads/"))

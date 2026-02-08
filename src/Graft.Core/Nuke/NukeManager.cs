@@ -26,8 +26,8 @@ public static class NukeManager
             : StringComparison.Ordinal;
 
         var linkedWorktrees = worktrees
-            .Where(wt => wt.Branch != null && !wt.IsBare)
-            .Where(wt => !string.Equals(repoFullPath, Path.GetFullPath(wt.Path), pathComparison));
+            .Where(wt => wt.Branch != null && !wt.IsBare
+                && !string.Equals(repoFullPath, Path.GetFullPath(wt.Path), pathComparison));
 
         foreach (var wt in linkedWorktrees)
         {

@@ -36,27 +36,8 @@ public static class AutoFetcher
         {
             ct.ThrowIfCancellationRequested();
 
-            if (!Directory.Exists(repo.Path))
-                continue;
-
-            try
-            {
-                var git = new GitRunner(repo.Path, ct);
-                var result = await git.RunAsync(FetchTimeout, "fetch", "--all", "--quiet");
-                if (result.Success)
-                {
-                    repo.LastFetched = DateTime.UtcNow;
-                    updated = true;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch
-            {
-                // Network error, unreachable remote, etc. — skip this repo.
-            }
+            if (await TryFetchRepoAsync(repo, ct))
+                updated = true;
         }
 
         if (updated)
@@ -75,6 +56,36 @@ public static class AutoFetcher
                 ConfigLoader.SaveRepoCache(freshCache, configDir);
             });
         }
+    }
+
+    /// <summary>
+    /// Attempts to fetch a single repo. Returns true if LastFetched was updated.
+    /// </summary>
+    private static async Task<bool> TryFetchRepoAsync(CachedRepo repo, CancellationToken ct)
+    {
+        if (!Directory.Exists(repo.Path))
+            return false;
+
+        try
+        {
+            var git = new GitRunner(repo.Path, ct);
+            var result = await git.RunAsync(FetchTimeout, "fetch", "--all", "--quiet");
+            if (result.Success)
+            {
+                repo.LastFetched = DateTime.UtcNow;
+                return true;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // Network error, unreachable remote, etc. — skip this repo.
+        }
+
+        return false;
     }
 
     /// <summary>

@@ -18,25 +18,30 @@ public static class GitHandler
 
         if (statusResult.Success && !string.IsNullOrWhiteSpace(statusResult.Stdout))
         {
-            foreach (var line in statusResult.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-            {
-                if (line.Length < 3) continue;
-                var indexStatus = line[0];
-                var workTreeStatus = line[1];
-                var file = line[3..].Trim();
-
-                if (indexStatus != ' ' && indexStatus != '?')
-                    response.StagedFiles.Add(file);
-
-                if (workTreeStatus == 'M' || workTreeStatus == 'D')
-                    response.ModifiedFiles.Add(file);
-
-                if (indexStatus == '?' && workTreeStatus == '?')
-                    response.UntrackedFiles.Add(file);
-            }
+            ParsePorcelainStatus(statusResult.Stdout, response);
         }
 
         await ApiServer.WriteJson(ctx, 200, response);
+    }
+
+    private static void ParsePorcelainStatus(string porcelainOutput, GitStatusResponse response)
+    {
+        foreach (var line in porcelainOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (line.Length < 3) continue;
+            var indexStatus = line[0];
+            var workTreeStatus = line[1];
+            var file = line[3..].Trim();
+
+            if (indexStatus != ' ' && indexStatus != '?')
+                response.StagedFiles.Add(file);
+
+            if (workTreeStatus == 'M' || workTreeStatus == 'D')
+                response.ModifiedFiles.Add(file);
+
+            if (indexStatus == '?' && workTreeStatus == '?')
+                response.UntrackedFiles.Add(file);
+        }
     }
 
     public static async Task GetBranches(HttpListenerContext ctx, string repoPath, CancellationToken ct)

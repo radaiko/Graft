@@ -129,131 +129,146 @@ root.SetAction(async (parseResult, ct) =>
     var doContinue = parseResult.GetValue(continueOption);
     var doAbort = parseResult.GetValue(abortOption);
 
-    // Mutual exclusion check
     if (doContinue && doAbort)
     {
-        Console.Error.WriteLine("Error: --continue and --abort cannot be used together.");
+        await Console.Error.WriteLineAsync("Error: --continue and --abort cannot be used together.");
         Environment.ExitCode = 1;
         return;
     }
 
-    if (doContinue)
-    {
-        var repoPath = Directory.GetCurrentDirectory();
+    if (doContinue) { await HandleContinueAsync(ct); return; }
+    if (doAbort) { await HandleAbortAsync(ct); return; }
+    ShowHelp(root);
+});
 
-        // Check if we have a graft operation state (cascade sync)
-        var opState = StackManager.LoadOperationState(repoPath);
-        if (opState != null)
+var exitCode = await root.Parse(args).InvokeAsync();
+return exitCode != 0 ? exitCode : Environment.ExitCode;
+
+static async Task HandleContinueAsync(CancellationToken ct)
+{
+    var repoPath = Directory.GetCurrentDirectory();
+
+    // Check if we have a graft operation state (cascade sync)
+    var opState = StackManager.LoadOperationState(repoPath);
+    if (opState != null)
+    {
+        try
         {
-            try
+            var result = await StackManager.ContinueSyncAsync(repoPath, ct);
+            foreach (var br in result.BranchResults)
             {
-                var result = await StackManager.ContinueSyncAsync(repoPath, ct);
-                foreach (var br in result.BranchResults)
+                if (br.Status == SyncStatus.Conflict)
                 {
-                    if (br.Status == SyncStatus.Conflict)
-                    {
-                        Console.WriteLine($"  \u2717 {br.Name} \u2014 conflict");
-                        Console.WriteLine();
-                        Console.WriteLine("Conflicting files:");
-                        foreach (var file in br.ConflictingFiles)
-                            Console.WriteLine($"  - {file}");
-                        Console.WriteLine();
-                        Console.WriteLine("To resolve:");
-                        Console.WriteLine("  1. Fix conflicts in the files above");
-                        Console.WriteLine("  2. Stage resolved files: git add <file>");
-                        Console.WriteLine("  3. Continue: graft --continue");
-                        Console.WriteLine();
-                        Console.WriteLine("To abort: graft --abort");
-                        Environment.ExitCode = 1;
-                        return;
-                    }
-                    Console.WriteLine($"  \u2713 {br.Name} (merged)");
+                    PrintConflictDetails(br);
+                    Environment.ExitCode = 1;
+                    return;
                 }
-                Console.WriteLine("Done.");
+                Console.WriteLine($"  \u2713 {br.Name} (merged)");
             }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
-            return;
+            Console.WriteLine("Done.");
         }
-
-        // Fall back to raw git merge --continue
-        var git = new GitRunner(repoPath, ct);
-        var gitDir = GitRunner.ResolveGitDir(repoPath);
-        var mergeHead = Path.Combine(gitDir, "MERGE_HEAD");
-
-        if (File.Exists(mergeHead))
+        catch (Exception ex)
         {
-            var result = await git.RunAsync("merge", "--continue");
-            if (result.Success)
-            {
-                Console.WriteLine("Merge continued successfully.");
-            }
-            else
-            {
-                Console.Error.WriteLine($"Error: {result.Stderr}");
-                Console.Error.WriteLine("Fix remaining conflicts, stage with 'git add', then run 'graft --continue' again.");
-                Environment.ExitCode = 1;
-            }
-        }
-        else
-        {
-            Console.Error.WriteLine("Error: No operation in progress to continue.");
-            Console.Error.WriteLine("There is no merge in progress. Nothing to continue.");
+            await Console.Error.WriteLineAsync($"Error: {ex.Message}");
             Environment.ExitCode = 1;
         }
         return;
     }
 
-    if (doAbort)
+    // Fall back to raw git merge --continue
+    await ContinueGitMergeAsync(repoPath, ct);
+}
+
+static async Task ContinueGitMergeAsync(string repoPath, CancellationToken ct)
+{
+    var git = new GitRunner(repoPath, ct);
+    var gitDir = GitRunner.ResolveGitDir(repoPath);
+    var mergeHead = Path.Combine(gitDir, "MERGE_HEAD");
+
+    if (!File.Exists(mergeHead))
     {
-        var repoPath = Directory.GetCurrentDirectory();
+        await Console.Error.WriteLineAsync("Error: No operation in progress to continue.");
+        await Console.Error.WriteLineAsync("There is no merge in progress. Nothing to continue.");
+        Environment.ExitCode = 1;
+        return;
+    }
 
-        // Check if we have a graft operation state
-        var opState = StackManager.LoadOperationState(repoPath);
-        if (opState != null)
+    var result = await git.RunAsync("merge", "--continue");
+    if (result.Success)
+    {
+        Console.WriteLine("Merge continued successfully.");
+    }
+    else
+    {
+        await Console.Error.WriteLineAsync($"Error: {result.Stderr}");
+        await Console.Error.WriteLineAsync("Fix remaining conflicts, stage with 'git add', then run 'graft --continue' again.");
+        Environment.ExitCode = 1;
+    }
+}
+
+static void PrintConflictDetails(BranchSyncResult br)
+{
+    Console.WriteLine($"  \u2717 {br.Name} \u2014 conflict");
+    Console.WriteLine();
+    Console.WriteLine("Conflicting files:");
+    foreach (var file in br.ConflictingFiles)
+        Console.WriteLine($"  - {file}");
+    Console.WriteLine();
+    Console.WriteLine("To resolve:");
+    Console.WriteLine("  1. Fix conflicts in the files above");
+    Console.WriteLine("  2. Stage resolved files: git add <file>");
+    Console.WriteLine("  3. Continue: graft --continue");
+    Console.WriteLine();
+    Console.WriteLine("To abort: graft --abort");
+}
+
+static async Task HandleAbortAsync(CancellationToken ct)
+{
+    var repoPath = Directory.GetCurrentDirectory();
+
+    // Check if we have a graft operation state
+    var opState = StackManager.LoadOperationState(repoPath);
+    if (opState != null)
+    {
+        try
         {
-            try
-            {
-                await StackManager.AbortSyncAsync(repoPath, ct);
-                Console.WriteLine("Sync aborted.");
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
-            return;
+            await StackManager.AbortSyncAsync(repoPath, ct);
+            Console.WriteLine("Sync aborted.");
         }
-
-        var git = new GitRunner(repoPath, ct);
-        var gitDir = GitRunner.ResolveGitDir(repoPath);
-        var mergeHead = Path.Combine(gitDir, "MERGE_HEAD");
-
-        if (File.Exists(mergeHead))
+        catch (Exception ex)
         {
-            var result = await git.RunAsync("merge", "--abort");
-            if (result.Success)
-            {
-                Console.WriteLine("Merge aborted.");
-            }
-            else
-            {
-                Console.Error.WriteLine($"Error: {result.Stderr}");
-                Environment.ExitCode = 1;
-            }
-        }
-        else
-        {
-            Console.Error.WriteLine("Error: No operation in progress to abort.");
+            await Console.Error.WriteLineAsync($"Error: {ex.Message}");
             Environment.ExitCode = 1;
         }
         return;
     }
 
-    // No --continue or --abort: show help
+    var git = new GitRunner(repoPath, ct);
+    var gitDir = GitRunner.ResolveGitDir(repoPath);
+    var mergeHead = Path.Combine(gitDir, "MERGE_HEAD");
+
+    if (File.Exists(mergeHead))
+    {
+        var result = await git.RunAsync("merge", "--abort");
+        if (result.Success)
+        {
+            Console.WriteLine("Merge aborted.");
+        }
+        else
+        {
+            await Console.Error.WriteLineAsync($"Error: {result.Stderr}");
+            Environment.ExitCode = 1;
+        }
+    }
+    else
+    {
+        await Console.Error.WriteLineAsync("Error: No operation in progress to abort.");
+        Environment.ExitCode = 1;
+    }
+}
+
+static void ShowHelp(RootCommand root)
+{
     Console.WriteLine(root.Description);
     Console.WriteLine();
     Console.WriteLine("Usage: graft [command] [options]");
@@ -269,7 +284,4 @@ root.SetAction(async (parseResult, ct) =>
     Console.WriteLine("  --abort        Abort an in-progress operation");
     Console.WriteLine();
     Console.WriteLine("Run 'graft [command] --help' for more information about a command.");
-});
-
-var exitCode = await root.Parse(args).InvokeAsync();
-return exitCode != 0 ? exitCode : Environment.ExitCode;
+}
