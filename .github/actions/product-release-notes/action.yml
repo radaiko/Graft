@@ -52,25 +52,26 @@ runs:
         NOTES=""
 
         if [ "${#PR_NUMS[@]}" -gt 0 ]; then
-          # Build a single GraphQL query to fetch all PRs with their labels
-          QUERY='query { repository(owner: "'"$OWNER"'", name: "'"$REPO"'") {'
-          for i in "${!PR_NUMS[@]}"; do
-            QUERY="${QUERY} pr${i}: pullRequest(number: ${PR_NUMS[$i]}) { number title author { login } labels(first: 10) { nodes { name } } }"
-          done
-          QUERY="${QUERY} }}"
+          # Query each reference individually — skip issues and deleted PRs
+          for num in "${PR_NUMS[@]}"; do
+            RESULT=$(gh api graphql -f query='
+              query {
+                repository(owner: "'"$OWNER"'", name: "'"$REPO"'") {
+                  pullRequest(number: '"$num"') {
+                    number title author { login }
+                    labels(first: 10) { nodes { name } }
+                  }
+                }
+              }' 2>/dev/null) || continue
 
-          RESULT=$(gh api graphql -f query="$QUERY")
-
-          # Filter by product label and format
-          for i in "${!PR_NUMS[@]}"; do
             HAS_LABEL=$(echo "$RESULT" | jq -r \
               --arg label "$PRODUCT_LABEL" \
-              ".data.repository.pr${i}.labels.nodes[]? | select(.name == \$label) | .name")
+              '.data.repository.pullRequest.labels.nodes[]? | select(.name == $label) | .name')
 
             if [ -n "$HAS_LABEL" ]; then
-              TITLE=$(echo "$RESULT" | jq -r ".data.repository.pr${i}.title")
-              USER=$(echo "$RESULT" | jq -r ".data.repository.pr${i}.author.login // \"ghost\"")
-              NOTES="${NOTES}* ${TITLE} by @${USER} in #${PR_NUMS[$i]}"$'\n'
+              TITLE=$(echo "$RESULT" | jq -r '.data.repository.pullRequest.title')
+              USER=$(echo "$RESULT" | jq -r '.data.repository.pullRequest.author.login // "ghost"')
+              NOTES="${NOTES}* ${TITLE} by @${USER} in #${num}"$'\n'
             fi
           done
         fi
