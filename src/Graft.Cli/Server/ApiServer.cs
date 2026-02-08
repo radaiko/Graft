@@ -37,9 +37,9 @@ public sealed class ApiServer : IDisposable
     public void Dispose()
     {
         _cts?.Cancel();
-        try { _listener.Stop(); } catch (ObjectDisposedException) { }
-        try { _listener.Close(); } catch (ObjectDisposedException) { }
-        try { _listenTask?.Wait(TimeSpan.FromSeconds(2)); } catch { }
+        try { _listener.Stop(); } catch (ObjectDisposedException) { /* Already disposed during shutdown */ }
+        try { _listener.Close(); } catch (ObjectDisposedException) { /* Already disposed during shutdown */ }
+        try { _listenTask?.Wait(TimeSpan.FromSeconds(2)); } catch { /* Shutdown best-effort — server is stopping */ }
         _cts?.Dispose();
         _gitLock.Dispose();
     }

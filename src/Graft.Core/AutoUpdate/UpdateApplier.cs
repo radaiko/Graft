@@ -59,7 +59,7 @@ public static class UpdateApplier
         try
         {
             // Delete backup if it exists (use try-catch instead of check-then-delete to avoid TOCTOU)
-            try { File.Delete(backupPath); } catch (FileNotFoundException) { }
+            try { File.Delete(backupPath); } catch (FileNotFoundException) { /* Expected if no previous backup */ }
 
             File.Move(currentBinaryPath, backupPath);
             File.Move(stagedPath, currentBinaryPath);
@@ -79,7 +79,7 @@ public static class UpdateApplier
             UpdateChecker.SaveUpdateState(state, stateDir);
 
             // Clean up backup
-            try { File.Delete(backupPath); } catch (FileNotFoundException) { }
+            try { File.Delete(backupPath); } catch (FileNotFoundException) { /* Backup already gone — fine */ }
 
             return true;
         }

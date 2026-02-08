@@ -42,7 +42,7 @@ public static class UiCommand
             };
 
             ct.Register(() => exit.Set());
-            exit.Wait();
+            exit.Wait(ct);
 
             return Task.CompletedTask;
         });
