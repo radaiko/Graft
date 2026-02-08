@@ -124,8 +124,7 @@ public sealed class RepoScannerTests : IDisposable
     [Fact]
     public void ScanAndUpdateCache_MergesWithoutDuplicates()
     {
-        CreateFakeGitRepo("existing-repo");
-        var repoPath = Path.Combine(_scanDir, "existing-repo");
+        var repoPath = CreateFakeGitRepo("existing-repo");
 
         // Pre-populate cache with this repo
         var cache = new RepoCache();

@@ -21,7 +21,8 @@ public static class FuzzyPicker
     /// </summary>
     public static T? Pick<T>(List<PickerItem<T>> items, string prompt = "Search: ") where T : class
     {
-        if (Console.IsInputRedirected || Console.IsOutputRedirected || items.Count == 0)
+        // Render goes to stderr, input from stdin — only bail if those are redirected
+        if (Console.IsInputRedirected || Console.IsErrorRedirected || items.Count == 0)
             return null;
 
         var query = "";
@@ -29,15 +30,14 @@ public static class FuzzyPicker
         var scrollOffset = 0;
         var filtered = new List<PickerItem<T>>(items);
         var totalCount = items.Count;
+        var renderedLines = 0; // lines below prompt from last render
 
         // Hide cursor (via stderr)
         Err.Write("\x1b[?25l");
-        // Get current cursor row via stderr — use CursorTop which reads terminal state
-        var startRow = Console.CursorTop;
 
         try
         {
-            Render(prompt, query, filtered, selectedIndex, scrollOffset, startRow, totalCount);
+            renderedLines = Render(prompt, query, filtered, selectedIndex, scrollOffset, totalCount, renderedLines);
 
             while (true)
             {
@@ -90,16 +90,15 @@ public static class FuzzyPicker
                 if (selectedIndex >= scrollOffset + MaxVisible)
                     scrollOffset = selectedIndex - MaxVisible + 1;
 
-                Render(prompt, query, filtered, selectedIndex, scrollOffset, startRow, totalCount);
+                renderedLines = Render(prompt, query, filtered, selectedIndex, scrollOffset, totalCount, renderedLines);
             }
         }
         finally
         {
-            // Show cursor and move past rendered content (via stderr)
-            var visibleCount = Math.Min(filtered.Count - scrollOffset, MaxVisible);
-            if (visibleCount < 0) visibleCount = 0;
-            var totalLines = 1 + visibleCount + 1;
-            Err.Write($"\x1b[{startRow + totalLines + 1};1H");
+            // Move past rendered content and show cursor
+            if (renderedLines > 0)
+                Err.Write($"\x1b[{renderedLines}B");
+            Err.Write("\r\n");
             Err.Write("\x1b[?25h");
             Err.Flush();
         }
@@ -113,21 +112,27 @@ public static class FuzzyPicker
         return FuzzyMatcher.Filter(query, items, i => i.Label);
     }
 
-    private static void Render<T>(string prompt, string query, List<PickerItem<T>> filtered, int selectedIndex, int scrollOffset, int startRow, int totalCount)
+    /// <summary>
+    /// Renders the picker UI using relative ANSI cursor movement (no Console.CursorTop).
+    /// Returns the number of lines below the prompt line that were rendered.
+    /// </summary>
+    private static int Render<T>(string prompt, string query, List<PickerItem<T>> filtered, int selectedIndex, int scrollOffset, int totalCount, int previousLines)
     {
-        // Move to start row (ANSI rows are 1-based)
-        Err.Write($"\x1b[{startRow + 1};1H");
+        // Move cursor back to prompt line from wherever it ended up last render
+        if (previousLines > 0)
+            Err.Write($"\x1b[{previousLines}A");
+        Err.Write("\r");
 
-        // Prompt line
+        // Prompt line (line 0)
         Err.Write($"\x1b[2K{prompt}{query}");
 
         // Items
         var end = Math.Min(scrollOffset + MaxVisible, filtered.Count);
-        var visibleCount = end - scrollOffset;
+        var linesBelow = 0;
         for (int i = scrollOffset; i < end; i++)
         {
-            var row = startRow + 1 + (i - scrollOffset);
-            Err.Write($"\x1b[{row + 1};1H\x1b[2K");
+            Err.Write("\r\n\x1b[2K");
+            linesBelow++;
 
             var item = filtered[i];
             if (i == selectedIndex)
@@ -147,18 +152,25 @@ public static class FuzzyPicker
         }
 
         // Status line
-        var statusRow = startRow + 1 + visibleCount;
-        Err.Write($"\x1b[{statusRow + 1};1H\x1b[2K\x1b[90m  {filtered.Count} / {totalCount} items\x1b[0m");
+        Err.Write("\r\n\x1b[2K");
+        linesBelow++;
+        Err.Write($"\x1b[90m  {filtered.Count} / {totalCount} items\x1b[0m");
 
-        // Clear any leftover lines below
-        for (int i = 0; i < MaxVisible - visibleCount; i++)
+        // Clear leftover lines from previous render
+        for (int i = linesBelow; i < previousLines; i++)
         {
-            var clearRow = statusRow + 1 + i;
-            Err.Write($"\x1b[{clearRow + 1};1H\x1b[2K");
+            Err.Write("\r\n\x1b[2K");
+            linesBelow++;
         }
 
-        // Move cursor back to end of query on the prompt line
-        Err.Write($"\x1b[{startRow + 1};{prompt.Length + query.Length + 1}H");
+        // Move back to prompt line
+        if (linesBelow > 0)
+            Err.Write($"\x1b[{linesBelow}A");
+
+        // Position cursor at end of query text (1-based column)
+        Err.Write($"\x1b[{prompt.Length + query.Length + 1}G");
         Err.Flush();
+
+        return linesBelow;
     }
 }

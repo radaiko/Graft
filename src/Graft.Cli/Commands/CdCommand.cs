@@ -92,6 +92,11 @@ public static class CdCommand
                 {
                     Console.WriteLine(selected.Path);
                 }
+                else
+                {
+                    Console.Error.WriteLine("No selection made. Provide a name: graft cd <name>");
+                    Environment.ExitCode = 1;
+                }
             }
         });
 

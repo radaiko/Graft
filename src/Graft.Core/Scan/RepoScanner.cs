@@ -41,10 +41,15 @@ public static class RepoScanner
                 var name = Path.GetFileName(dir);
                 var repo = new CachedRepo { Name = name, Path = dir };
 
-                // If .git is a file, this is a worktree — try to read branch
                 if (File.Exists(gitPath))
                 {
+                    // .git is a file — this is a worktree
                     repo.Branch = TryReadWorktreeBranch(dir);
+                }
+                else
+                {
+                    // Regular repo — read branch from .git/HEAD
+                    repo.Branch = TryReadRepoBranch(gitPath);
                 }
 
                 repos.Add(repo);
@@ -75,6 +80,31 @@ public static class RepoScanner
         {
             // Directory was removed between enumeration and access
         }
+        catch (IOException)
+        {
+            // Symlink loops, disconnected drives, etc.
+        }
+    }
+
+    private static string? TryReadRepoBranch(string gitDir)
+    {
+        try
+        {
+            var headPath = Path.Combine(gitDir, "HEAD");
+            if (!File.Exists(headPath))
+                return null;
+
+            var headContent = File.ReadAllText(headPath).Trim();
+            const string refPrefix = "ref: refs/heads/";
+            if (headContent.StartsWith(refPrefix))
+                return headContent[refPrefix.Length..];
+        }
+        catch
+        {
+            // Best effort
+        }
+
+        return null;
     }
 
     private static string? TryReadWorktreeBranch(string wtPath)

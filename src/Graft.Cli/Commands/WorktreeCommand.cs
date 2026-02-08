@@ -42,12 +42,10 @@ public static class WorktreeCommand
                     try
                     {
                         var wtPath = WorktreeManager.GetWorktreePath(branch, repoPath);
-                        var repoName = Path.GetFileName(Path.GetFullPath(repoPath));
-                        var safeBranch = branch.Replace('/', '-');
                         var configDir = CliPaths.GetConfigDir();
                         ConfigLoader.AddRepoToCache(new CachedRepo
                         {
-                            Name = $"{repoName}.wt.{safeBranch}",
+                            Name = Path.GetFileName(wtPath),
                             Path = wtPath,
                             Branch = branch,
                         }, configDir);
