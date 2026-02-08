@@ -69,4 +69,73 @@ public sealed class InProcessWorktreeTests : IDisposable
 
         Assert.Equal(0, result.ExitCode);
     }
+
+    [Fact]
+    public async Task WtRemove_ExistingWorktree_Succeeds()
+    {
+        // Add a worktree, then remove it with --force (stdin redirected in tests)
+        await InProcessCliRunner.RunAsync(_repo.Path, "wt", "rm-branch", "-c");
+
+        var result = await InProcessCliRunner.RunAsync(_repo.Path, "wt", "remove", "rm-branch", "-f");
+
+        Assert.Equal(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task WtRemove_WithForce_Succeeds()
+    {
+        await InProcessCliRunner.RunAsync(_repo.Path, "wt", "force-rm-branch", "-c");
+
+        var result = await InProcessCliRunner.RunAsync(_repo.Path, "wt", "remove", "force-rm-branch", "-f");
+
+        Assert.Equal(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task WtAdd_NonExistentBranch_WithoutCreate_ShowsError()
+    {
+        var result = await InProcessCliRunner.RunAsync(_repo.Path, "wt", "ghost-branch-xyz");
+
+        Assert.NotEqual(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task WtRemove_NonExistent_ShowsError()
+    {
+        var result = await InProcessCliRunner.RunAsync(_repo.Path, "wt", "remove", "nonexistent-wt-branch");
+
+        Assert.NotEqual(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task Wt_NoArgs_ShowsUsage()
+    {
+        var result = await InProcessCliRunner.RunAsync(_repo.Path, "wt");
+
+        Assert.NotEqual(0, result.ExitCode);
+        var combined = result.Stdout + result.Stderr;
+        Assert.Contains("Usage", combined);
+    }
+
+    [Fact]
+    public async Task WtRemove_WithRmAlias_Succeeds()
+    {
+        await InProcessCliRunner.RunAsync(_repo.Path, "wt", "rm-alias-branch", "-c");
+
+        var result = await InProcessCliRunner.RunAsync(_repo.Path, "wt", "rm", "rm-alias-branch", "-f");
+
+        Assert.Equal(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task WtRemove_WithoutForce_InputRedirected_ShowsError()
+    {
+        // Without --force and with redirected input, should fail
+        await InProcessCliRunner.RunAsync(_repo.Path, "wt", "no-force-branch", "-c");
+
+        var result = await InProcessCliRunner.RunAsync(_repo.Path, "wt", "remove", "no-force-branch");
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("Cannot prompt", result.Stderr);
+    }
 }

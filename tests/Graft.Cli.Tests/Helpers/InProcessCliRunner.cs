@@ -16,6 +16,20 @@ public static class InProcessCliRunner
     /// </summary>
     public static async Task<CliResult> RunAsync(string? workingDir, params string[] args)
     {
+        return await RunCoreAsync(workingDir, stdin: null, args);
+    }
+
+    /// <summary>
+    /// Runs a CLI command in-process with stdin input, capturing stdout and stderr.
+    /// Used for commands that prompt for confirmation (e.g., nuke).
+    /// </summary>
+    public static async Task<CliResult> RunWithStdinAsync(string? workingDir, string stdin, params string[] args)
+    {
+        return await RunCoreAsync(workingDir, stdin, args);
+    }
+
+    private static async Task<CliResult> RunCoreAsync(string? workingDir, string? stdin, string[] args)
+    {
         // We need exclusive access because we change CWD and redirect console
         return await Task.Run(() =>
         {
@@ -23,6 +37,7 @@ public static class InProcessCliRunner
             {
                 var originalOut = Console.Out;
                 var originalErr = Console.Error;
+                var originalIn = Console.In;
                 var originalCwd = Directory.GetCurrentDirectory();
                 var originalExitCode = Environment.ExitCode;
 
@@ -33,6 +48,8 @@ public static class InProcessCliRunner
                 {
                     Console.SetOut(stdoutWriter);
                     Console.SetError(stderrWriter);
+                    if (stdin != null)
+                        Console.SetIn(new StringReader(stdin));
                     Environment.ExitCode = 0;
 
                     if (workingDir != null)
@@ -59,6 +76,7 @@ public static class InProcessCliRunner
                 {
                     Console.SetOut(originalOut);
                     Console.SetError(originalErr);
+                    Console.SetIn(originalIn);
                     Directory.SetCurrentDirectory(originalCwd);
                     Environment.ExitCode = originalExitCode;
                 }
