@@ -21,6 +21,22 @@ Each branch is its own PR. Each PR shows only its own changes. `graft stack sync
 
 ---
 
+## Why Graft?
+
+When feature B depends on feature A (still in review), most teams hit the same wall:
+
+| Approach | Problem |
+|----------|---------|
+| Wait for A to merge | Blocks your work |
+| Branch B from A | PR shows both A and B's changes |
+| Merge main into A, then branch | Painful conflicts after squash merge |
+
+Graft fixes this. Each branch targets the one below it, so each PR shows only its own diff. `sync` propagates changes through the stack automatically.
+
+**Merge, not rebase.** Graft uses merge commits to keep branches in sync. Since your team squash-merges PRs anyway, those merge commits disappear from `main`. No force push, no rewritten history, safe for teams.
+
+---
+
 ## Install
 
 ### macOS / Linux
@@ -78,52 +94,45 @@ Update `feature/api-layer`'s PR to target `main`. Done.
 
 ---
 
-## Why Graft?
-
-When feature B depends on feature A (still in review), most teams hit the same wall:
-
-| Approach | Problem |
-|----------|---------|
-| Wait for A to merge | Blocks your work |
-| Branch B from A | PR shows both A and B's changes |
-| Merge main into A, then branch | Painful conflicts after squash merge |
-
-Graft fixes this. Each branch targets the one below it, so each PR shows only its own diff. `sync` propagates changes through the stack automatically.
-
-**Merge, not rebase.** Graft uses merge commits to keep branches in sync. Since your team squash-merges PRs anyway, those merge commits disappear from `main`. No force push, no rewritten history, safe for teams.
-
----
-
-## What Can Graft Do?
+## Feature Overview
 
 ### Stack Management
 
 | Command | Description |
 |---------|-------------|
-| `gt stack init <name>` | Create a new stack on the current branch |
-| `gt stack push -c <branch>` | Create a branch and add it to the top of the stack |
-| `gt stack log` | Display a visual graph of the stack |
-| `gt stack sync` | Merge the entire stack bottom-to-top, then push |
-| `gt stack commit -m <msg> [-b <branch>]` | Commit staged changes to any branch in the stack |
-| `gt stack remove <name>` | Remove a stack definition (git branches are kept) |
+| [`gt stack init`](cli/stack#graft-stack-init-name--b--base-branch) | Create a new stack on the current branch |
+| [`gt stack push -c`](cli/stack#graft-stack-push-branch--c--create) | Create a branch and add it to the top of the stack |
+| [`gt stack log`](cli/stack#graft-stack-log) | Display a visual graph of the stack |
+| [`gt stack sync`](cli/stack#graft-stack-sync-branch) | Merge the entire stack bottom-to-top, then push |
+| [`gt stack commit`](cli/stack#graft-stack-commit---message-message--b-branch---amend-alias-ci) | Commit staged changes to any branch in the stack |
+| [`gt stack remove`](cli/stack#graft-stack-remove-name--f--force-alias-rm) | Remove a stack definition (git branches are kept) |
 
 ### Worktree Management
 
 | Command | Description |
 |---------|-------------|
-| `gt wt <branch>` | Create a worktree for an existing branch |
-| `gt wt <branch> -c` | Create a new branch + worktree |
-| `gt wt remove <branch>` | Remove a worktree |
-| `gt wt list` | List all worktrees |
+| [`gt wt <branch>`](cli/worktree#graft-wt-branch--c--create) | Create a worktree for an existing branch |
+| [`gt wt <branch> -c`](cli/worktree#graft-wt-branch--c--create) | Create a new branch + worktree |
+| [`gt wt remove`](cli/worktree#graft-wt-remove-branch--f--force-alias-rm) | Remove a worktree |
+| [`gt wt list`](cli/worktree#graft-wt-list-alias-ls) | List all worktrees |
+
+### Repo Discovery & Navigation
+
+| Command | Description |
+|---------|-------------|
+| [`gt scan add`](cli/scan#graft-scan-add-directory) | Register a directory for repo scanning |
+| [`gt scan auto-fetch`](cli/scan#auto-fetch-commands) | Enable/disable background git fetch per repo |
+| [`gt cd <name>`](cli/navigation#graft-cd-name) | Jump to any repo or worktree by name |
+| [`gt status`](cli/status#graft-status-alias-st) | Cross-repo overview of all discovered repos |
 
 ### Setup
 
 | Command | Description |
 |---------|-------------|
-| `gt install` | Create `gt` symlink and `git gt` alias |
-| `gt update` | Check for and apply updates |
-| `gt version` | Print current version |
-| `gt ui` | Open the browser-based [web UI](web-ui) |
+| [`gt install`](cli/setup#graft-install) | Create `gt` symlink and `git gt` alias |
+| [`gt update`](cli/setup#graft-update) | Check for and apply updates |
+| [`gt version`](cli/setup#graft-version) | Print current version |
+| [`gt ui`](cli/setup#graft-ui) | Open the browser-based [web UI](web-ui) |
 
 ---
 
@@ -139,10 +148,18 @@ No .NET runtime required — Graft compiles to a native AOT binary.
 
 ---
 
-## Links
+## Learn More
 
 - [Workflow Guide](workflow) — Full stacked branches walkthrough
 - [CLI Reference](cli-reference) — Complete command reference
+  - [Stack Commands](cli/stack) — Create, manage, and sync stacked branches
+  - [Worktree Commands](cli/worktree) — Parallel checkouts with fixed naming
+  - [Scan & Discovery](cli/scan) — Repo scanning and auto-fetch
+  - [Navigation](cli/navigation) — Jump to repos and worktrees
+  - [Status](cli/status) — Cross-repo status overview
+  - [Nuke Commands](cli/nuke) — Bulk cleanup operations
+  - [Conflict Resolution](cli/conflict) — Handle merge conflicts during sync
+  - [Setup Commands](cli/setup) — Install, update, and aliases
 - [Web UI](web-ui) — Browser-based interface
 - [FAQ](faq) — Common questions
 - [Changelog](changelog) — What changed in each version

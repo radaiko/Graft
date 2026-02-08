@@ -41,6 +41,8 @@ Pushing auth/api... done.
 
 You can also sync a single branch: `graft stack sync auth/session`.
 
+See [Stack Commands](cli/stack#graft-stack-sync-branch) for the full reference.
+
 </details>
 
 ---
@@ -121,6 +123,8 @@ Graft saves its state to `.git/graft/operation.toml`. After resolving:
 
 If another conflict occurs further up the stack, the process repeats.
 
+See [Conflict Resolution](cli/conflict) for the full workflow guide.
+
 </details>
 
 ---
@@ -185,6 +189,8 @@ gt wt remove feature/auth -f      # force-remove
 ```
 
 Worktrees are useful when working on multiple stack branches at the same time without switching.
+
+See [Worktree Commands](cli/worktree) for the full reference.
 
 </details>
 
@@ -283,6 +289,8 @@ Check manually: `graft update`.
 
 No telemetry or usage data is collected. The only network request is a GitHub API call to check for new releases.
 
+See [Setup Commands](cli/setup#auto-update) for more details.
+
 </details>
 
 ---
@@ -299,5 +307,81 @@ The PR workflow is the same everywhere:
 4. `drop` + `sync` after each merge
 
 You create and manage PRs through your hosting platform's UI or CLI — Graft handles the branch management side.
+
+</details>
+
+---
+
+<details markdown="1">
+<summary><strong>How does repo scanning work?</strong></summary>
+
+Graft can discover git repositories across your machine. Register directories with `graft scan add`:
+
+```bash
+graft scan add ~/dev/projects
+graft scan add ~/dev/work
+```
+
+On every `graft` invocation, a background thread scans registered paths for git repos. The scan is non-blocking — your command runs immediately. Results are cached in `~/.config/graft/repo-cache.toml`.
+
+Discovered repos power two features:
+- **`graft cd <name>`** — jump to any repo or worktree by name. See [Navigation](cli/navigation).
+- **`graft status`** — cross-repo overview of all discovered repos. See [Status](cli/status).
+
+Worktrees created with `graft wt` are automatically added to the cache. Stale entries (deleted repos) are pruned automatically.
+
+See [Scan & Discovery](cli/scan) for the full command reference.
+
+</details>
+
+---
+
+<details markdown="1">
+<summary><strong>What is auto-fetch?</strong></summary>
+
+Auto-fetch runs `git fetch --all --quiet` in the background on every `graft` invocation, keeping your repos up to date without manual fetching.
+
+```bash
+# Enable for the current repo
+graft scan auto-fetch enable
+
+# Enable for a named repo
+graft scan auto-fetch enable my-app
+
+# See auto-fetch status for all repos
+graft scan auto-fetch list
+```
+
+Auto-fetch is rate-limited to once every 15 minutes per repo. Fetch failures are silently skipped — one repo failing doesn't block others.
+
+See [Scan & Discovery](cli/scan#auto-fetch-commands) for full details.
+
+</details>
+
+---
+
+<details markdown="1">
+<summary><strong>What does <code>graft status</code> show?</strong></summary>
+
+`graft status` gives a compact overview of all discovered repos:
+
+```bash
+$ graft status
+Graft  ~/dev/projects/Graft
+  branch   main
+  status   ✓ clean
+  stack    auth-refactor (3 branches)
+  worktrees  2 active
+
+my-app  ~/dev/projects/my-app
+  branch   feature/api
+  status   ↑2 ↓1  3 changed
+```
+
+Each repo shows: current branch, clean/dirty status, ahead/behind remote, active stack info, and worktree count.
+
+Use `graft status <reponame>` for detailed output including the full stack graph and worktree list.
+
+See [Status](cli/status) for full details.
 
 </details>

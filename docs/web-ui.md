@@ -94,6 +94,8 @@ The UI communicates via a local REST API. These endpoints are available for scri
 
 ### Stack
 
+These endpoints correspond to the [Stack CLI commands](cli/stack).
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/stacks` | List all stacks |
@@ -110,12 +112,16 @@ The UI communicates via a local REST API. These endpoints are available for scri
 
 ### Conflict Resolution
 
+These endpoints correspond to the [Conflict Resolution CLI commands](cli/conflict).
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/sync/continue` | Continue after resolving a conflict |
 | POST | `/api/sync/abort` | Abort the in-progress sync |
 
 ### Worktree
+
+These endpoints correspond to the [Worktree CLI commands](cli/worktree).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -124,6 +130,8 @@ The UI communicates via a local REST API. These endpoints are available for scri
 | DELETE | `/api/worktrees` | Delete a worktree |
 
 ### Nuke
+
+These endpoints correspond to the [Nuke CLI commands](cli/nuke).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|

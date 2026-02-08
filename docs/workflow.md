@@ -289,3 +289,13 @@ The tradeoff is merge commits in your branch history. But since most teams **squ
 - **Safe for teams** — shared branches are never force-pushed
 - **Built for squash-merge** — merge commits in branches don't matter
 - **Conflict handling** — clear error messages, `--continue` / `--abort` workflow
+
+---
+
+## Next Steps
+
+- [Stack Commands](cli/stack) — Full reference for all stack operations
+- [Conflict Resolution](cli/conflict) — Detailed conflict handling guide
+- [Worktree Commands](cli/worktree) — Work on multiple branches simultaneously
+- [Scan & Discovery](cli/scan) — Register repos and enable auto-fetch
+- [FAQ](faq) — Common questions about stacked branches
