@@ -39,6 +39,9 @@ public sealed class GitRunner
         foreach (var arg in args)
             process.StartInfo.ArgumentList.Add(arg);
 
+        // Prevent git from ever opening an editor (e.g. during merge --continue).
+        process.StartInfo.Environment["GIT_EDITOR"] = "true";
+
         process.Start();
 
         // Read both streams concurrently to prevent pipe buffer deadlock.

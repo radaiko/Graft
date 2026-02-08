@@ -13,7 +13,6 @@ All repo-specific data lives under the `.git/graft/` directory (resolved via `gi
 ├── config.toml           # Repo-level settings
 ├── stacks/
 │   └── <name>.toml       # One file per stack
-├── worktrees.toml        # Worktree layout and templates
 └── operation.toml        # Transient: tracks in-progress operations
 ```
 
@@ -22,7 +21,6 @@ All repo-specific data lives under the `.git/graft/` directory (resolved via `gi
 ```toml
 [defaults]
 trunk = "main"                # Default trunk branch for new stacks
-stack_pr_strategy = "chain"   # PR creation strategy: "chain" or "independent"
 ```
 
 All fields are optional. Defaults are applied when a field is missing.
@@ -30,7 +28,6 @@ All fields are optional. Defaults are applied when a field is missing.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `defaults.trunk` | string | `"main"` | Default trunk branch for `graft stack init` |
-| `defaults.stack_pr_strategy` | string | `"chain"` | How PRs are created for stacked branches |
 
 ### `stacks/<name>.toml` — Stack Definition
 
@@ -73,37 +70,6 @@ pr_state = "open"
 | `pr_state` | string | no | `"open"`, `"merged"`, or `"closed"` (default: `"open"`) |
 
 **Branch ordering:** Branches are ordered bottom-to-top. Index 0 is merged from the trunk. Each subsequent branch is merged from the one before it.
-
-### `worktrees.toml` — Worktree Configuration
-
-```toml
-[layout]
-pattern = "../{name}"
-
-[templates]
-[[templates.files]]
-src = ".env.template"
-dst = ".env"
-mode = "copy"
-
-[[templates.files]]
-src = ".vscode/settings.json"
-dst = ".vscode/settings.json"
-mode = "symlink"
-```
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `layout.pattern` | string | `"../{name}"` | Path pattern for new worktrees. Must contain `{name}`. Resolved relative to the repo root. |
-| `templates.files` | array of tables | `[]` | Files to copy or symlink into new worktrees |
-
-**Template file fields:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `src` | string | yes | Source path relative to the repo root |
-| `dst` | string | yes | Destination path relative to the worktree root |
-| `mode` | string | no | `"copy"` (default) or `"symlink"` |
 
 ### `operation.toml` — In-Progress Operation State
 

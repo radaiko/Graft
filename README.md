@@ -11,10 +11,11 @@ A cross-platform CLI tool for managing stacked branches and git worktrees.
 
 Git's stacked branches and worktree features are powerful but ergonomically painful. Graft fixes that:
 
-- **Stacked branches** — Track dependencies, cascade rebases automatically, commit to any branch in a stack
-- **Worktree management** — Opinionated layouts, template files (.env, configs), Windows drive letter mapping
+- **Stacked branches** — Track dependencies, merge parent branches bottom-to-top, commit to any branch in a stack
+- **Worktree management** — Create and manage git worktrees with a fixed naming convention
 - **Web UI** — Browser-based visual interface for stacks and worktrees (`graft ui`)
-- **Hosting integration** — Create and manage PRs for entire stacks (GitHub, GitLab)
+- **Repo discovery & navigation** — Scan directories for repos, navigate by name or branch with `graft cd`
+- **Cross-repo status** — See branch, ahead/behind, changed files, stacks, and worktrees across all repos
 
 ## Documentation
 
@@ -26,8 +27,7 @@ Pre-built binaries for all platforms (Windows, macOS, Linux — x64 and arm64) a
 
 ## Status
 
-Early development. Not yet usable.
-
+In active development. See [Releases](https://github.com/radaiko/Graft/releases) for pre-built binaries.
 
 ## License
 

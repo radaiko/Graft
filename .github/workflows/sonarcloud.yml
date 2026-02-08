@@ -53,14 +53,17 @@ jobs:
           dotnet build tests/Graft.Core.Tests/Graft.Core.Tests.csproj --no-incremental
           dotnet build tests/Graft.Cli.Tests/Graft.Cli.Tests.csproj --no-incremental
 
-      - name: Test with coverage
-        continue-on-error: true
+      - name: Test Graft.Core
         run: |
           dotnet test tests/Graft.Core.Tests/Graft.Core.Tests.csproj \
             --no-build \
             --logger trx \
             --collect:"XPlat Code Coverage" \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Test Graft.Cli
+        if: always()
+        run: |
           dotnet test tests/Graft.Cli.Tests/Graft.Cli.Tests.csproj \
             --no-build \
             --logger trx \
