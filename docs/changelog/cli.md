@@ -8,6 +8,17 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ---
 
+## [0.3.2]
+
+### Added
+- **CLI:** `graft install` now writes shell wrapper functions to the user's profile (`~/.zshrc`, `~/.bashrc`, `config.fish`, `$PROFILE`) so `graft cd` / `gt cd` actually changes the shell's working directory (#42)
+- **CLI:** `graft uninstall` cleanly removes the injected shell wrapper block (#42)
+- **CLI:** ANSI color output throughout `graft status` — bold names, cyan branches, green/red sync indicators, yellow changes, magenta stacks, blue worktrees (#43)
+
+### Changed
+- **CLI:** `graft status` overview condensed to 1 line per repo with colored badges for at-a-glance scanning (#43)
+- **CLI:** `graft status` respects `NO_COLOR` env var and disables colors when output is piped (#43)
+
 ## [0.3.1]
 
 ### Added

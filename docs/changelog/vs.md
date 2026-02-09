@@ -6,6 +6,11 @@ title: Visual Studio
 
 ---
 
+## [0.1.3]
+
+### Changed
+- Minimum required CLI version is now 0.3.2
+
 ## [0.1.2]
 
 ### Fixed
