@@ -15,6 +15,7 @@ public static class ScanCommand
         command.Add(CreateRemoveAlias());
         command.Add(CreateListCommand());
         command.Add(CreateListAlias());
+        command.Add(CreateUpdateCommand());
         command.Add(CreateAutoFetchCommand());
 
         return command;
@@ -44,6 +45,10 @@ public static class ScanCommand
         {
             ScanPathManager.Add(directory, configDir);
             Console.WriteLine($"Added scan path: {Path.GetFullPath(directory)}");
+
+            Console.WriteLine("Scanning for repositories...");
+            RepoScanner.ScanAndUpdateCache(configDir);
+            Console.WriteLine("Scan complete.");
         }
         catch (Exception ex)
         {
@@ -142,6 +147,44 @@ public static class ScanCommand
 
             foreach (var p in paths)
                 Console.WriteLine(p.Path);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
+    }
+
+    private static Command CreateUpdateCommand()
+    {
+        var command = new Command("update", "Fetch all repos once (like auto-fetch, but a single time for all repos)");
+
+        command.SetAction(async (parseResult, ct) =>
+        {
+            await DoUpdateAsync(ct);
+        });
+
+        return command;
+    }
+
+    private static async Task DoUpdateAsync(CancellationToken ct)
+    {
+        var configDir = CliPaths.GetConfigDir();
+
+        try
+        {
+            Console.WriteLine("Fetching all repos...");
+            await AutoFetcher.FetchAllReposAsync(configDir, (name, success) =>
+            {
+                var status = success ? "ok" : "failed";
+                Console.WriteLine($"  {status,-8} {name}");
+            }, ct);
+            Console.WriteLine("Done.");
+        }
+        catch (OperationCanceledException)
+        {
+            Console.Error.WriteLine("Fetch cancelled.");
+            Environment.ExitCode = 1;
         }
         catch (Exception ex)
         {

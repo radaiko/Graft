@@ -89,6 +89,46 @@ public static class AutoFetcher
     }
 
     /// <summary>
+    /// Fetches all repos in the cache once, regardless of auto-fetch flag or rate limit.
+    /// Updates LastFetched timestamps on success. Reports progress via an optional callback.
+    /// </summary>
+    public static async Task FetchAllReposAsync(string configDir, Action<string, bool>? onRepoFetched = null, CancellationToken ct = default)
+    {
+        var cache = ConfigLoader.LoadRepoCache(configDir);
+        var repos = cache.Repos.Where(r => !string.IsNullOrEmpty(r.Name) && Directory.Exists(r.Path)).ToList();
+
+        if (repos.Count == 0)
+            return;
+
+        var updated = false;
+        foreach (var repo in repos)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var success = await TryFetchRepoAsync(repo, ct);
+            onRepoFetched?.Invoke(repo.Name, success);
+            if (success)
+                updated = true;
+        }
+
+        if (updated)
+        {
+            ConfigLoader.WithCacheLock(configDir, () =>
+            {
+                var freshCache = ConfigLoader.LoadRepoCache(configDir);
+                foreach (var fetchedRepo in repos.Where(r => r.LastFetched.HasValue))
+                {
+                    var match = freshCache.Repos.Find(r =>
+                        string.Equals(r.Path, fetchedRepo.Path, PathComparison));
+                    if (match != null)
+                        match.LastFetched = fetchedRepo.LastFetched;
+                }
+                ConfigLoader.SaveRepoCache(freshCache, configDir);
+            });
+        }
+    }
+
+    /// <summary>
     /// Returns repos that have auto-fetch enabled and haven't been fetched within the interval.
     /// </summary>
     public static List<CachedRepo> GetDueRepos(RepoCache cache, TimeSpan interval)
