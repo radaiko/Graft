@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>graft</AssemblyName>
-    <Version>0.1.0</Version>
+    <Version>0.3.1</Version>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
     <EnableAotAnalyzer>true</EnableAotAnalyzer>

@@ -8,6 +8,11 @@ Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/item
 
 ---
 
+## [0.1.2]
+
+### Changed
+- Minimum required CLI version is now 0.3.1
+
 ## [0.1.1]
 
 ### Changed

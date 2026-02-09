@@ -2,7 +2,7 @@
   "name": "graft-vscode",
   "displayName": "Graft",
   "description": "Visual stack management for Graft — stacked branches and git worktrees",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "publisher": "radaiko",
   "license": "MIT",
   "icon": "media/graft-icon.png",
