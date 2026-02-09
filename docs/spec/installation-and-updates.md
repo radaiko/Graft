@@ -52,7 +52,7 @@ All three forms are identical: `graft stack sync`, `gt stack sync`, `git gt stac
 
 **Block format:** The injected code is wrapped in markers for clean removal:
 
-```
+```text
 # >>> graft shell integration >>>
 graft() { ... }
 gt() { ... }

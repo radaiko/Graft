@@ -39,12 +39,13 @@ public static class ShellInitGenerator
         """
         function Invoke-Graft {
             if ($args.Count -ge 1 -and $args[0] -eq 'cd') {
-                $rest = $args[1..($args.Count - 1)]
+                $rest = if ($args.Count -gt 1) { $args[1..($args.Count - 1)] } else { @() }
                 $dir = & (Get-Command graft -CommandType Application | Select-Object -First 1) cd @rest
                 $rc = $LASTEXITCODE
                 if ($rc -eq 0 -and $dir) {
                     Set-Location $dir
                 }
+                $global:LASTEXITCODE = $rc
                 return
             }
             & (Get-Command graft -CommandType Application | Select-Object -First 1) @args
@@ -52,12 +53,13 @@ public static class ShellInitGenerator
 
         function Invoke-Gt {
             if ($args.Count -ge 1 -and $args[0] -eq 'cd') {
-                $rest = $args[1..($args.Count - 1)]
+                $rest = if ($args.Count -gt 1) { $args[1..($args.Count - 1)] } else { @() }
                 $dir = & (Get-Command gt -CommandType Application | Select-Object -First 1) cd @rest
                 $rc = $LASTEXITCODE
                 if ($rc -eq 0 -and $dir) {
                     Set-Location $dir
                 }
+                $global:LASTEXITCODE = $rc
                 return
             }
             & (Get-Command gt -CommandType Application | Select-Object -First 1) @args

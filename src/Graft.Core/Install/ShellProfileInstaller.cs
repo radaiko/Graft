@@ -67,12 +67,16 @@ public static class ShellProfileInstaller
             return false;
 
         endIdx += EndMarker.Length;
-        // Also consume the trailing newline if present
-        if (endIdx < content.Length && content[endIdx] == '\n')
+        // Also consume the trailing newline (CRLF or LF)
+        if (endIdx < content.Length && content[endIdx] == '\r' && endIdx + 1 < content.Length && content[endIdx + 1] == '\n')
+            endIdx += 2;
+        else if (endIdx < content.Length && content[endIdx] == '\n')
             endIdx++;
 
-        // Remove leading blank line if the block was preceded by one
-        if (startIdx > 0 && content[startIdx - 1] == '\n')
+        // Remove leading blank line if the block was preceded by one (CRLF or LF)
+        if (startIdx >= 2 && content[startIdx - 2] == '\r' && content[startIdx - 1] == '\n')
+            startIdx -= 2;
+        else if (startIdx > 0 && content[startIdx - 1] == '\n')
             startIdx--;
 
         var newContent = content[..startIdx] + content[endIdx..];

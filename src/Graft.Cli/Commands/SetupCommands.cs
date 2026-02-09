@@ -34,7 +34,10 @@ public static class InstallCommand
                 else
                 {
                     Console.WriteLine($"Added shell integration to {shellResult.ProfilePath}");
-                    Console.WriteLine("Restart your shell or run: source " + shellResult.ProfilePath);
+                    var reloadCmd = shellResult.Shell is "pwsh" or "powershell"
+                        ? $". {shellResult.ProfilePath}"
+                        : $"source {shellResult.ProfilePath}";
+                    Console.WriteLine($"Restart your shell or run: {reloadCmd}");
                 }
             }
             catch (Exception ex)
@@ -62,8 +65,10 @@ public static class UninstallCommand
                     ?? throw new InvalidOperationException(
                         "Cannot determine binary path. Run graft using its full path.");
                 AliasInstaller.Uninstall(binaryPath);
-                ShellProfileInstaller.Uninstall();
-                Console.WriteLine("Removed aliases and shell integration.");
+                var shellRemoved = ShellProfileInstaller.Uninstall();
+                Console.WriteLine(shellRemoved
+                    ? "Removed aliases and shell integration."
+                    : "Removed aliases.");
             }
             catch (Exception ex)
             {
