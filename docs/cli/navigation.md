@@ -27,12 +27,11 @@ If multiple repos or worktrees match the name, all matches are shown and you pic
 
 ### How It Works
 
-A child process can't change the parent shell's working directory. Graft handles this with a shell function that wraps the binary:
+A child process can't change the parent shell's working directory. Graft solves this with a shell function wrapper (the same pattern used by zoxide, direnv, etc.).
 
-1. `graft cd <name>` prints the target directory path to stdout
-2. The shell function captures this and runs `cd` in the parent shell
+`graft install` automatically detects your shell and writes wrapper functions into your profile (`~/.zshrc`, `~/.bashrc`, `config.fish`, or `$PROFILE`). Restart your shell and `graft cd` just works. `graft uninstall` removes the integration.
 
-The shell function is set up automatically by `graft install`. If you're using `graft` directly (without the shell function), the path is printed but the directory change won't happen — use `cd $(graft cd <name>)` as a workaround.
+The wrapper functions intercept `graft cd` and `gt cd`, capture the path from stdout, and run `cd` in the parent shell. All other subcommands pass through to the binary unchanged.
 
 ---
 

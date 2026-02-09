@@ -19,6 +19,23 @@ public static class InstallCommand
                         "Cannot determine binary path. Run graft using its full path.");
                 AliasInstaller.Install(binaryPath);
                 Console.WriteLine("Installed aliases: gt, git gt");
+
+                var shellResult = ShellProfileInstaller.Install();
+                if (shellResult is null)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Could not detect your shell. Shell integration for 'graft cd' was not installed.");
+                    Console.WriteLine("Supported shells: bash, zsh, fish, PowerShell.");
+                }
+                else if (shellResult.AlreadyPresent)
+                {
+                    Console.WriteLine($"Shell integration already in {shellResult.ProfilePath}");
+                }
+                else
+                {
+                    Console.WriteLine($"Added shell integration to {shellResult.ProfilePath}");
+                    Console.WriteLine("Restart your shell or run: source " + shellResult.ProfilePath);
+                }
             }
             catch (Exception ex)
             {
@@ -45,7 +62,8 @@ public static class UninstallCommand
                     ?? throw new InvalidOperationException(
                         "Cannot determine binary path. Run graft using its full path.");
                 AliasInstaller.Uninstall(binaryPath);
-                Console.WriteLine("Removed aliases: gt, git gt");
+                ShellProfileInstaller.Uninstall();
+                Console.WriteLine("Removed aliases and shell integration.");
             }
             catch (Exception ex)
             {
