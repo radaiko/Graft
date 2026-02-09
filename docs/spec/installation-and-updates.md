@@ -34,6 +34,34 @@ All three forms are identical: `graft stack sync`, `gt stack sync`, `git gt stac
 **Uninstall:**
 1. Deletes the `gt` symlink/copy.
 2. Removes the `alias.gt` entry from `~/.gitconfig` using `git config --global --unset alias.gt`. Exit code 5 (key not found) is ignored.
+3. Removes the shell integration block from the user's shell profile.
+
+---
+
+## Shell Integration
+
+`graft install` also writes shell wrapper functions into the user's shell profile to enable `graft cd` (a subprocess can't change the parent shell's working directory).
+
+**Detection:** The current shell is detected from the `SHELL` environment variable (Unix) or `PSModulePath` (Windows/PowerShell).
+
+**Profile files:**
+- **Zsh:** `~/.zshrc`
+- **Bash:** `~/.bashrc` (preferred if it exists, otherwise `~/.bash_profile`)
+- **Fish:** `~/.config/fish/config.fish`
+- **PowerShell:** `~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1` (Windows) or `~/.config/powershell/Microsoft.PowerShell_profile.ps1` (Unix)
+
+**Block format:** The injected code is wrapped in markers for clean removal:
+
+```text
+# >>> graft shell integration >>>
+graft() { ... }
+gt() { ... }
+# <<< graft shell integration <<<
+```
+
+**Idempotent:** If the marker block already exists, install is a no-op.
+
+**Uninstall:** Removes everything between (and including) the markers.
 
 ---
 

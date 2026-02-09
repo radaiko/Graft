@@ -22,12 +22,13 @@ Installation, aliases, updates, and the web UI.
 
 ## `graft install`
 
-Create the `gt` shortcut next to the `graft` binary and add `git gt` alias to your global git config.
+Create the `gt` shortcut, add `git gt` alias, and set up shell integration for `graft cd`.
 
 ```bash
 $ graft install
-Created symlink: gt → /usr/local/bin/graft
-Added git alias: git gt → graft
+Installed aliases: gt, git gt
+Added shell integration to /Users/you/.zshrc
+Restart your shell or run: source /Users/you/.zshrc
 ```
 
 After installation, you can use any of these interchangeably:
@@ -42,11 +43,26 @@ On macOS/Linux, `gt` is a symlink. On Windows, it's a copy of the binary.
 
 The `git gt` alias is written to `~/.gitconfig` as `gt = !graft`.
 
+### Shell Integration
+
+`graft install` detects your current shell and writes wrapper functions into your profile:
+
+| Shell | Profile |
+|-------|---------|
+| Zsh | `~/.zshrc` |
+| Bash | `~/.bashrc` (or `~/.bash_profile`) |
+| Fish | `~/.config/fish/config.fish` |
+| PowerShell | `$PROFILE` |
+
+The wrapper functions intercept `graft cd` and `gt cd`, capture the target path from stdout, and run `cd` in the parent shell. All other subcommands pass through to the binary unchanged. This is the same pattern used by zoxide, direnv, and similar tools.
+
+If your shell can't be detected, `graft install` will print a notice. Supported shells: bash, zsh, fish, PowerShell.
+
 ---
 
 ## `graft uninstall`
 
-Remove the `gt` shortcut and `git gt` alias.
+Remove the `gt` shortcut, `git gt` alias, and shell integration from your profile.
 
 ---
 

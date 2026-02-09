@@ -49,7 +49,7 @@ curl -fsSL https://raw.githubusercontent.com/radaiko/Graft/main/install.sh | bas
 irm https://raw.githubusercontent.com/radaiko/Graft/main/install.ps1 | iex
 ```
 
-The installer places `graft` in `~/.local/bin` and sets up two shortcuts: `gt` (symlink) and `git gt` (git alias). All three forms are interchangeable.
+The installer places `graft` in `~/.local/bin` and runs `graft install`, which sets up shortcuts (`gt`, `git gt`) and shell integration for [`graft cd`](./cli/navigation.md).
 
 Graft is a single native binary — no runtime, no dependencies.
 
