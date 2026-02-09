@@ -41,21 +41,7 @@ public static class AutoFetcher
         }
 
         if (updated)
-        {
-            ConfigLoader.WithCacheLock(configDir, () =>
-            {
-                // Re-read to merge with concurrent changes, then apply only LastFetched updates.
-                var freshCache = ConfigLoader.LoadRepoCache(configDir);
-                foreach (var fetchedRepo in dueRepos.Where(r => r.LastFetched.HasValue))
-                {
-                    var match = freshCache.Repos.Find(r =>
-                        string.Equals(r.Path, fetchedRepo.Path, PathComparison));
-                    if (match != null)
-                        match.LastFetched = fetchedRepo.LastFetched;
-                }
-                ConfigLoader.SaveRepoCache(freshCache, configDir);
-            });
-        }
+            MergeFetchTimestamps(configDir, dueRepos);
     }
 
     /// <summary>
@@ -112,20 +98,26 @@ public static class AutoFetcher
         }
 
         if (updated)
+            MergeFetchTimestamps(configDir, repos);
+    }
+
+    /// <summary>
+    /// Re-reads the cache under a lock and merges LastFetched timestamps from the given repos.
+    /// </summary>
+    private static void MergeFetchTimestamps(string configDir, List<CachedRepo> fetchedRepos)
+    {
+        ConfigLoader.WithCacheLock(configDir, () =>
         {
-            ConfigLoader.WithCacheLock(configDir, () =>
+            var freshCache = ConfigLoader.LoadRepoCache(configDir);
+            foreach (var fetchedRepo in fetchedRepos.Where(r => r.LastFetched.HasValue))
             {
-                var freshCache = ConfigLoader.LoadRepoCache(configDir);
-                foreach (var fetchedRepo in repos.Where(r => r.LastFetched.HasValue))
-                {
-                    var match = freshCache.Repos.Find(r =>
-                        string.Equals(r.Path, fetchedRepo.Path, PathComparison));
-                    if (match != null)
-                        match.LastFetched = fetchedRepo.LastFetched;
-                }
-                ConfigLoader.SaveRepoCache(freshCache, configDir);
-            });
-        }
+                var match = freshCache.Repos.Find(r =>
+                    string.Equals(r.Path, fetchedRepo.Path, PathComparison));
+                if (match != null)
+                    match.LastFetched = fetchedRepo.LastFetched;
+            }
+            ConfigLoader.SaveRepoCache(freshCache, configDir);
+        });
     }
 
     /// <summary>

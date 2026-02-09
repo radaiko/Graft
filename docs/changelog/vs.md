@@ -6,6 +6,11 @@ title: Visual Studio
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Extension:** Fix Stack Explorer tool window crash on startup by making constructor public for VS reflection-based instantiation (#38)
+
 ## [0.1.1]
 
 ### Changed

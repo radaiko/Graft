@@ -46,6 +46,7 @@ public static class ScanCommand
             ScanPathManager.Add(directory, configDir);
             Console.WriteLine($"Added scan path: {Path.GetFullPath(directory)}");
 
+            // Intentionally synchronous so repos are discoverable immediately after adding a scan path (#36).
             Console.WriteLine("Scanning for repositories...");
             RepoScanner.ScanAndUpdateCache(configDir);
             Console.WriteLine("Scan complete.");
@@ -173,6 +174,13 @@ public static class ScanCommand
 
         try
         {
+            var cache = ConfigLoader.LoadRepoCache(configDir);
+            if (!cache.Repos.Any(r => !string.IsNullOrEmpty(r.Name) && Directory.Exists(r.Path)))
+            {
+                Console.WriteLine("No repos in cache. Register a scan directory with 'graft scan add <dir>' first.");
+                return;
+            }
+
             Console.WriteLine("Fetching all repos...");
             await AutoFetcher.FetchAllReposAsync(configDir, (name, success) =>
             {
