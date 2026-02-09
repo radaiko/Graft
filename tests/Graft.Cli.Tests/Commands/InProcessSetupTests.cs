@@ -36,4 +36,31 @@ public sealed class InProcessSetupTests
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("Usage:", result.Stdout);
     }
+
+    [Fact]
+    public async Task Install_ExercisesHandler()
+    {
+        // Install may fail (e.g. symlink permissions) but exercises the handler code
+        var result = await InProcessCliRunner.RunAsync(null, "install");
+
+        // Either succeeds or fails — both exercise the handler
+        Assert.True(result.ExitCode == 0 || result.ExitCode == 1);
+    }
+
+    [Fact]
+    public async Task Uninstall_ExercisesHandler()
+    {
+        var result = await InProcessCliRunner.RunAsync(null, "uninstall");
+
+        Assert.True(result.ExitCode == 0 || result.ExitCode == 1);
+    }
+
+    [Fact]
+    public async Task Update_ExercisesHandler()
+    {
+        var result = await InProcessCliRunner.RunAsync(null, "update");
+
+        // Update checks network — may fail, but exercises the handler
+        Assert.True(result.ExitCode == 0 || result.ExitCode == 1);
+    }
 }

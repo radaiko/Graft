@@ -2,6 +2,7 @@ using Graft.Cli.Server;
 
 namespace Graft.Cli.Tests.Server;
 
+[Collection("Server")]
 public sealed class ApiServerTests
 {
     [Fact]

@@ -32,9 +32,23 @@ public sealed class ApiServer : IDisposable
     public void Start()
     {
         _cts = new CancellationTokenSource();
-        _listener.Prefixes.Add($"http://localhost:{Port}/");
-        _listener.Start();
-        _listenTask = ListenAsync(_cts.Token);
+
+        // Retry port binding to handle TOCTOU race between FindFreePort() and Start()
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                _listener.Prefixes.Clear();
+                _listener.Prefixes.Add($"http://localhost:{Port}/");
+                _listener.Start();
+                _listenTask = ListenAsync(_cts.Token);
+                return;
+            }
+            catch (HttpListenerException) when (attempt < 2)
+            {
+                Port = FindFreePort();
+            }
+        }
     }
 
     public void Dispose()
