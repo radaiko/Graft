@@ -58,6 +58,8 @@ public static class StatusCommand
         }
     }
 
+    // ── Overview (all repos, 1 line each) ────────────────────────────────
+
     private static async Task DoOverviewStatus(string configDir, CancellationToken ct)
     {
         var statuses = await StatusCollector.CollectAllAsync(configDir, ct);
@@ -68,56 +70,59 @@ public static class StatusCommand
             return;
         }
 
-        var first = true;
-        foreach (var status in statuses)
-        {
-            if (!first) Console.WriteLine();
-            first = false;
+        var maxNameWidth = statuses.Max(s => s.Name.Length);
 
-            PrintRepoOverview(status);
-        }
+        foreach (var status in statuses)
+            PrintRepoOverview(status, maxNameWidth);
     }
 
-    private static void PrintRepoOverview(RepoStatus status)
+    private static void PrintRepoOverview(RepoStatus status, int nameWidth)
     {
-        var tilded = TildePath(status.Path);
-        Console.WriteLine($"{status.Name}  {tilded}");
+        var namePad = status.Name.PadRight(nameWidth);
+        var nameStr = $"{Ansi.Bold}{namePad}{Ansi.Reset}";
 
         if (!status.IsAccessible)
         {
-            Console.WriteLine($"  status   inaccessible: {status.Error}");
+            Console.WriteLine($"  {nameStr}  {Ansi.Red}\u2717 {status.Error}{Ansi.Reset}");
             return;
         }
 
-        // Branch
-        Console.WriteLine($"  branch   {status.Branch ?? "(detached)"}");
+        var branch = $"{Ansi.Cyan}{status.Branch ?? "(detached)"}{Ansi.Reset}";
 
-        // Status line: ahead/behind + changed
-        var parts = new List<string>();
-        if (status.Ahead > 0) parts.Add($"\u2191{status.Ahead}");
-        if (status.Behind > 0) parts.Add($"\u2193{status.Behind}");
-        if (status.ChangedFiles > 0) parts.Add($"{status.ChangedFiles} changed");
-        if (status.UntrackedFiles > 0) parts.Add($"{status.UntrackedFiles} untracked");
+        var badges = new List<string>();
 
-        var statusText = parts.Count > 0 ? string.Join("  ", parts) : "clean";
-        Console.WriteLine($"  status   {statusText}");
+        bool isClean = status.Ahead == 0 && status.Behind == 0
+                       && status.ChangedFiles == 0 && status.UntrackedFiles == 0;
 
-        // Stack
+        if (isClean)
+        {
+            badges.Add($"{Ansi.Green}\u2713{Ansi.Reset}");
+        }
+        else
+        {
+            if (status.Ahead > 0)
+                badges.Add($"{Ansi.Green}\u2191{status.Ahead}{Ansi.Reset}");
+            if (status.Behind > 0)
+                badges.Add($"{Ansi.Red}\u2193{status.Behind}{Ansi.Reset}");
+            if (status.ChangedFiles > 0)
+                badges.Add($"{Ansi.Yellow}{status.ChangedFiles}\u0394{Ansi.Reset}");
+            if (status.UntrackedFiles > 0)
+                badges.Add($"{Ansi.Gray}{status.UntrackedFiles}?{Ansi.Reset}");
+        }
+
         if (status.ActiveStackName != null)
-            Console.WriteLine($"  stack    {status.ActiveStackName} ({status.ActiveStackBranchCount} branches)");
-        else
-            Console.WriteLine("  stack    \u2014");
+            badges.Add($"{Ansi.Magenta}\u2691{status.ActiveStackName}({status.ActiveStackBranchCount}){Ansi.Reset}");
 
-        // Worktrees
         if (status.Worktrees.Count > 0)
-            Console.WriteLine($"  worktrees  {status.Worktrees.Count} active");
-        else
-            Console.WriteLine("  worktrees  \u2014");
+            badges.Add($"{Ansi.Blue}{status.Worktrees.Count}wt{Ansi.Reset}");
+
+        Console.WriteLine($"  {nameStr}  {branch}  {string.Join("  ", badges)}");
     }
+
+    // ── Detailed (single repo) ───────────────────────────────────────────
 
     private static async Task DoDetailedStatus(string repoName, string configDir, CancellationToken ct)
     {
-        // Find repo in cache
         var cache = ConfigLoader.LoadRepoCache(configDir);
         var repo = cache.Repos.FirstOrDefault(r =>
             string.Equals(r.Name, repoName, StringComparison.OrdinalIgnoreCase));
@@ -141,31 +146,34 @@ public static class StatusCommand
         var status = await StatusCollector.CollectOneAsync(repo.Path, ct);
 
         var tilded = TildePath(status.Path);
-        Console.WriteLine($"{status.Name}  {tilded}");
+        Console.WriteLine($"  {Ansi.Bold}{status.Name}{Ansi.Reset}  {Ansi.Gray}{tilded}{Ansi.Reset}");
 
         if (!status.IsAccessible)
         {
-            Console.WriteLine($"  error: {status.Error}");
+            Console.WriteLine($"  {Ansi.Red}error: {status.Error}{Ansi.Reset}");
             return;
         }
 
+        Console.WriteLine();
+
         // Branch + upstream
-        Console.WriteLine($"  branch    {status.Branch ?? "(detached)"}");
+        Console.WriteLine($"  {Ansi.Gray}branch{Ansi.Reset}     {Ansi.Cyan}{status.Branch ?? "(detached)"}{Ansi.Reset}");
+
         if (status.Upstream != null)
         {
-            var upstreamDetail = (status.Ahead == 0 && status.Behind == 0)
-                ? "up to date"
-                : $"\u2191{status.Ahead} \u2193{status.Behind}";
-            Console.WriteLine($"  upstream  {status.Upstream} ({upstreamDetail})");
+            var syncLabel = (status.Ahead == 0 && status.Behind == 0)
+                ? $"{Ansi.Green}\u2713 synced{Ansi.Reset}"
+                : FormatAheadBehind(status.Ahead, status.Behind);
+            Console.WriteLine($"  {Ansi.Gray}upstream{Ansi.Reset}   {status.Upstream}  {syncLabel}");
         }
         else
         {
-            Console.WriteLine("  upstream  \u2014");
+            Console.WriteLine($"  {Ansi.Gray}upstream{Ansi.Reset}   {Ansi.Gray}\u2014{Ansi.Reset}");
         }
 
-        // Changed/untracked
-        Console.WriteLine($"  changed   {(status.ChangedFiles > 0 ? status.ChangedFiles.ToString() : "\u2014")}");
-        Console.WriteLine($"  untracked {(status.UntrackedFiles > 0 ? status.UntrackedFiles.ToString() : "\u2014")}");
+        // Changed / untracked
+        Console.WriteLine($"  {Ansi.Gray}changed{Ansi.Reset}    {FormatCount(status.ChangedFiles, Ansi.Yellow)}");
+        Console.WriteLine($"  {Ansi.Gray}untracked{Ansi.Reset}  {FormatCount(status.UntrackedFiles, Ansi.Yellow)}");
 
         // Stacks
         PrintDetailedStacks(status);
@@ -174,11 +182,11 @@ public static class StatusCommand
         if (status.Worktrees.Count > 0)
         {
             Console.WriteLine();
-            Console.WriteLine("  worktrees:");
+            Console.WriteLine($"  {Ansi.Blue}worktrees{Ansi.Reset}");
             foreach (var wt in status.Worktrees)
             {
                 var branchLabel = wt.Branch ?? "(detached)";
-                Console.WriteLine($"    {branchLabel}  \u2192 {wt.Path}");
+                Console.WriteLine($"    {Ansi.Cyan}{branchLabel}{Ansi.Reset}  {Ansi.Gray}\u2192 {wt.Path}{Ansi.Reset}");
             }
         }
     }
@@ -190,20 +198,48 @@ public static class StatusCommand
 
         foreach (var stack in status.Stacks)
         {
-            var active = stack.IsActive ? " (active)" : "";
+            var active = stack.IsActive ? $" {Ansi.Green}(active){Ansi.Reset}" : "";
             Console.WriteLine();
-            Console.WriteLine($"  stack: {stack.Name}{active}");
-            Console.WriteLine($"    {stack.Trunk}");
+            Console.WriteLine($"  {Ansi.Magenta}\u2691 {stack.Name}{Ansi.Reset}{active}");
+            Console.WriteLine($"    {Ansi.Gray}{stack.Trunk}{Ansi.Reset}");
 
             for (int i = 0; i < stack.Branches.Count; i++)
             {
                 var branch = stack.Branches[i];
                 var indent = new string(' ', 4 + (i * 5));
-                var connector = "\u2514\u2500\u2500 ";
-                var abInfo = $"(\u2191{branch.Ahead} \u2193{branch.Behind})";
-                Console.WriteLine($"{indent}{connector}{branch.Name}  {abInfo}");
+                var connector = $"{Ansi.Gray}\u2514\u2500\u2500 {Ansi.Reset}";
+
+                var abInfo = FormatBranchAheadBehind(branch.Ahead, branch.Behind);
+                Console.WriteLine($"{indent}{connector}{Ansi.Cyan}{branch.Name}{Ansi.Reset}{abInfo}");
             }
         }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    private static string FormatAheadBehind(int ahead, int behind)
+    {
+        var parts = new List<string>();
+        if (ahead > 0) parts.Add($"{Ansi.Green}\u2191{ahead}{Ansi.Reset}");
+        if (behind > 0) parts.Add($"{Ansi.Red}\u2193{behind}{Ansi.Reset}");
+        return string.Join(" ", parts);
+    }
+
+    private static string FormatBranchAheadBehind(int ahead, int behind)
+    {
+        if (ahead == 0 && behind == 0) return "";
+
+        var parts = new List<string>();
+        if (ahead > 0) parts.Add($"{Ansi.Green}\u2191{ahead}{Ansi.Reset}");
+        if (behind > 0) parts.Add($"{Ansi.Red}\u2193{behind}{Ansi.Reset}");
+        return "  " + string.Join(" ", parts);
+    }
+
+    private static string FormatCount(int count, string color)
+    {
+        return count > 0
+            ? $"{color}{count}{Ansi.Reset}"
+            : $"{Ansi.Gray}\u2014{Ansi.Reset}";
     }
 
     private static string TildePath(string path)
