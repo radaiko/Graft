@@ -20,6 +20,9 @@ public sealed class InProcessScanTests : IDisposable
 
     public void Dispose()
     {
+        // Remove the scan path from config first (before deleting the directory)
+        InProcessCliRunner.RunAsync(null, "scan", "remove", _tempDir).GetAwaiter().GetResult();
+
         if (Directory.Exists(_tempDir))
             Directory.Delete(_tempDir, recursive: true);
     }
