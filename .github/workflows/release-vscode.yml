@@ -63,7 +63,14 @@ jobs:
         working-directory: src/Graft.VSCodeExtension
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx @vscode/vsce publish --no-update-package-json
+        run: |
+          npx @vscode/vsce publish --no-update-package-json 2>&1 | tee /tmp/vsce-publish.log || {
+            if grep -q "already exists" /tmp/vsce-publish.log; then
+              echo "::warning::Version already published to marketplace, skipping."
+            else
+              exit 1
+            fi
+          }
 
       - name: Generate filtered release notes
         id: notes
@@ -78,9 +85,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_NOTES: ${{ steps.notes.outputs.notes }}
         run: |
+          RELEASE_TAG="vscode/v${{ steps.version.outputs.version }}"
           printf '%s' "$RELEASE_NOTES" > /tmp/release-notes.md
-          gh release create "vscode/v${{ steps.version.outputs.version }}" \
-            --title "Graft VS Code Extension v${{ steps.version.outputs.version }}" \
-            --latest=false \
-            --notes-file /tmp/release-notes.md \
-            src/Graft.VSCodeExtension/*.vsix
+          if gh release view "$RELEASE_TAG" &>/dev/null; then
+            echo "::warning::Release $RELEASE_TAG already exists, updating."
+            gh release upload "$RELEASE_TAG" src/Graft.VSCodeExtension/*.vsix --clobber
+          else
+            gh release create "$RELEASE_TAG" \
+              --title "Graft VS Code Extension v${{ steps.version.outputs.version }}" \
+              --latest=false \
+              --notes-file /tmp/release-notes.md \
+              src/Graft.VSCodeExtension/*.vsix
+          fi
