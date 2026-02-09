@@ -41,21 +41,7 @@ public static class AutoFetcher
         }
 
         if (updated)
-        {
-            ConfigLoader.WithCacheLock(configDir, () =>
-            {
-                // Re-read to merge with concurrent changes, then apply only LastFetched updates.
-                var freshCache = ConfigLoader.LoadRepoCache(configDir);
-                foreach (var fetchedRepo in dueRepos.Where(r => r.LastFetched.HasValue))
-                {
-                    var match = freshCache.Repos.Find(r =>
-                        string.Equals(r.Path, fetchedRepo.Path, PathComparison));
-                    if (match != null)
-                        match.LastFetched = fetchedRepo.LastFetched;
-                }
-                ConfigLoader.SaveRepoCache(freshCache, configDir);
-            });
-        }
+            MergeFetchTimestamps(configDir, dueRepos);
     }
 
     /// <summary>
@@ -86,6 +72,52 @@ public static class AutoFetcher
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Fetches all repos in the cache once, regardless of auto-fetch flag or rate limit.
+    /// Updates LastFetched timestamps on success. Reports progress via an optional callback.
+    /// </summary>
+    public static async Task FetchAllReposAsync(string configDir, Action<string, bool>? onRepoFetched = null, CancellationToken ct = default)
+    {
+        var cache = ConfigLoader.LoadRepoCache(configDir);
+        var repos = cache.Repos.Where(r => !string.IsNullOrEmpty(r.Name) && Directory.Exists(r.Path)).ToList();
+
+        if (repos.Count == 0)
+            return;
+
+        var updated = false;
+        foreach (var repo in repos)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var success = await TryFetchRepoAsync(repo, ct);
+            onRepoFetched?.Invoke(repo.Name, success);
+            if (success)
+                updated = true;
+        }
+
+        if (updated)
+            MergeFetchTimestamps(configDir, repos);
+    }
+
+    /// <summary>
+    /// Re-reads the cache under a lock and merges LastFetched timestamps from the given repos.
+    /// </summary>
+    private static void MergeFetchTimestamps(string configDir, List<CachedRepo> fetchedRepos)
+    {
+        ConfigLoader.WithCacheLock(configDir, () =>
+        {
+            var freshCache = ConfigLoader.LoadRepoCache(configDir);
+            foreach (var fetchedRepo in fetchedRepos.Where(r => r.LastFetched.HasValue))
+            {
+                var match = freshCache.Repos.Find(r =>
+                    string.Equals(r.Path, fetchedRepo.Path, PathComparison));
+                if (match != null)
+                    match.LastFetched = fetchedRepo.LastFetched;
+            }
+            ConfigLoader.SaveRepoCache(freshCache, configDir);
+        });
     }
 
     /// <summary>

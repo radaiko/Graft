@@ -141,7 +141,7 @@ Graft maintains a list of directories to scan for git repositories. On every inv
 
 ### `graft scan add <directory>`
 
-Register a directory to scan for git repositories. The path is stored in the global config (`~/.config/graft/config.toml`). Fails if the directory does not exist.
+Register a directory to scan for git repositories. The path is stored in the global config (`~/.config/graft/config.toml`). Fails if the directory does not exist. Immediately triggers a synchronous scan so repos are discoverable right away.
 
 ### `graft scan remove <directory>` (alias: `rm`)
 
@@ -157,6 +157,10 @@ On every `graft` invocation, a background thread scans all registered paths for 
 
 - **Stale removal**: If a previously cached repo no longer exists on disk, it is automatically removed from the cache.
 - **Worktree integration**: `graft wt` automatically adds new worktrees to the repo cache. `graft wt remove` automatically removes them.
+
+### `graft scan update`
+
+Fetch all cached repos once, regardless of auto-fetch settings or rate limits. Reports per-repo success/failure. Useful as a one-time manual refresh for all repos.
 
 ### Auto-Fetch
 

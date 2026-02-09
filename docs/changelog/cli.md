@@ -8,6 +8,15 @@ All Graft CLI releases. Download binaries from the [GitHub Releases](https://git
 
 ---
 
+## [Unreleased]
+
+### Added
+- **CLI:** `graft scan update` — fetch all cached repos once, regardless of auto-fetch settings (#35)
+- **CLI:** `graft scan add` now triggers an immediate scan so repos are discoverable right away (#36)
+
+### Fixed
+- **TUI:** Fix interactive picker jumping higher on each keystroke due to incorrect cursor-up at start of render (#37)
+
 ## [0.3.0]
 
 ### Added

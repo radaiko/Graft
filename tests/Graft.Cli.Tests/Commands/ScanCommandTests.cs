@@ -52,6 +52,13 @@ public sealed class ScanCommandTests
     }
 
     [Fact]
+    public void ScanUpdate_ParsesWithoutErrors()
+    {
+        var result = CliTestHelper.Parse("scan update");
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void Scan_HasExpectedSubcommands()
     {
         var root = CliTestHelper.BuildRootCommand();
@@ -69,6 +76,8 @@ public sealed class ScanCommandTests
         Assert.Contains("rm", subcommands);
         Assert.Contains("list", subcommands);
         Assert.Contains("ls", subcommands);
+        Assert.Contains("update", subcommands);
+        Assert.Contains("auto-fetch", subcommands);
     }
 
 }

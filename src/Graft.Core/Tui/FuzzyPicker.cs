@@ -133,9 +133,8 @@ public static class FuzzyPicker
     /// </summary>
     private static int Render<T>(string prompt, string query, List<PickerItem<T>> filtered, int selectedIndex, int scrollOffset, int totalCount, int previousLines)
     {
-        // Move cursor back to prompt line from wherever it ended up last render
-        if (previousLines > 0)
-            Err.Write($"\x1b[{previousLines}A");
+        // Cursor is already at the prompt line (moved back at end of previous render).
+        // Just return to column 1.
         Err.Write("\r");
 
         // Prompt line (line 0)

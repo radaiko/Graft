@@ -15,6 +15,7 @@ Manage directories that Graft scans for git repositories. Discovered repos power
 | `graft scan add <directory>` | Register a directory for scanning |
 | `graft scan remove <directory>` | Unregister a directory |
 | `graft scan list` | List registered scan paths |
+| `graft scan update` | Fetch all repos once (manual one-time fetch) |
 | `graft scan auto-fetch enable [<name>]` | Enable background fetch for a repo |
 | `graft scan auto-fetch disable [<name>]` | Disable background fetch for a repo |
 | `graft scan auto-fetch list` | List repos with auto-fetch status |
@@ -30,9 +31,11 @@ Register a directory to scan for git repositories.
 ```bash
 $ graft scan add ~/dev/projects
 Added scan path: /Users/dev/projects
+Scanning for repositories...
+Scan complete.
 ```
 
-On every `graft` invocation, a background thread scans all registered paths for git repositories. The scan is non-blocking — the main command runs immediately. Results are cached in `~/.config/graft/repo-cache.toml`.
+Adding a scan path immediately triggers a synchronous scan so repos are discoverable right away. On subsequent `graft` invocations, a background thread scans all registered paths automatically. Results are cached in `~/.config/graft/repo-cache.toml`.
 
 ### `graft scan remove <directory>` (alias: `rm`)
 
@@ -52,6 +55,25 @@ $ graft scan list
 /Users/dev/projects
 /Users/dev/work
 ```
+
+---
+
+## Update Command
+
+### `graft scan update`
+
+Fetch all cached repos once, regardless of auto-fetch settings or rate limits. Reports per-repo status.
+
+```bash
+$ graft scan update
+Fetching all repos...
+  ok       Graft
+  ok       my-app
+  failed   offline-repo
+Done.
+```
+
+This is a one-time manual fetch. For automatic background fetching, see [Auto-Fetch Commands](#auto-fetch-commands) below.
 
 ---
 

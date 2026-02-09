@@ -116,6 +116,7 @@ graft wt list (ls)                                     # List worktrees
 graft scan add <directory>                             # Register directory for repo scanning
 graft scan remove (rm) <directory>                     # Unregister directory
 graft scan list (ls)                                   # List registered scan paths
+graft scan update                                      # Fetch all cached repos once (manual)
 graft scan auto-fetch enable [<name>]                  # Enable auto-fetch for a repo
 graft scan auto-fetch disable [<name>]                 # Disable auto-fetch for a repo
 graft scan auto-fetch list                             # List repos with auto-fetch status
